@@ -1896,6 +1896,23 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Heartbeat card
+st.write("""
+<div style="background:#ECFEFF;border:2px solid #67E8F9;border-radius:12px;padding:20px 24px;margin:16px 0;">
+  <h3 style="margin:0 0 8px 0;color:#0e7490;">💚 CNAs Are The Heartbeat Of Healthcare</h3>
+  <p style="margin:0;color:#164e63;">Thank you for the care, patience, and courage you bring to every shift.</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Mission card
+st.write("""
+<div style="background:#fff;border:1.5px solid #0e7490;border-radius:12px;padding:20px 24px;margin:16px 0;">
+  <h3 style="margin:0 0 8px 0;color:#0e7490;">🎯 Our Mission</h3>
+  <p style="margin:0;color:#1e293b;">To elevate and empower CNAs and CNA students by providing the clarity, tools, and mentorship needed to master clinical skills, excel on the frontline, and confidently advance their healthcare journeys.</p>
+</div>
+""", unsafe_allow_html=True)
+
+
 with st.sidebar:
     st.header("Navigation")
     glass_mode = st.toggle("Dark Glass Theme", value=st.session_state.ui_theme == "glass", key="glass_theme_toggle")
