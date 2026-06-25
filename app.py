@@ -1,6 +1,13 @@
 import streamlit as st
 import pandas as pd
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+from pathlib import Path
+from lesson_assets import chapter_thumbnail_from_title, chapter_video_from_module, lesson_icon_from_title
+from modules import (
+    get_all_chapters, get_module, count_total_questions, VIDEO_SCRIPT_TEMPLATES, CASE_STUDIES,
+    CEU_COURSE_LIBRARY, ACTIVE_LICENSE_RENEWAL_STEPS, EXPIRED_LICENSE_REACTIVATION_STEPS,
+    TULIP_INFORMATION, RENEWAL_READINESS_CHECKLIST, PROFESSIONAL_RECOMMENDATIONS
+)
 
 st.set_page_config(
     page_title="TULIP-Link CNA Academy",
@@ -9,18 +16,21 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+if "ui_theme" not in st.session_state:
+    st.session_state.ui_theme = "light"
+
 # =========================================================
 # STYLES
 # =========================================================
 st.markdown("""
 <style>
 :root{
-    --bg:#f6f5f1;
+    --bg:#ffffff;
     --surface:#ffffff;
-    --surface-2:#f3f4f6;
-    --surface-3:#ecfeff;
-    --text:#1f2937;
-    --muted:#6b7280;
+    --surface-2:#f9fafb;
+    --surface-3:#f3f4f6;
+    --text:#000000;
+    --muted:#000000;
     --primary:#0f766e;
     --primary-dark:#134e4a;
     --border:#d1d5db;
@@ -41,6 +51,21 @@ html, body, [class*="css"] {
     color:var(--text);
 }
 body { background:var(--bg); }
+[data-testid="stAppViewContainer"] {
+    background:var(--bg) !important;
+}
+[data-testid="stMainBlockContainer"] {
+    background:var(--bg) !important;
+}
+.stApp {
+    background:var(--bg) !important;
+}
+[data-testid="stSidebar"] {
+    background:var(--bg) !important;
+}
+[data-testid="stSidebarContent"] {
+    background:var(--bg) !important;
+}
 .block-container {
     padding-top:1rem;
     padding-bottom:4rem;
@@ -48,7 +73,7 @@ body { background:var(--bg); }
 }
 .main-hero{
     background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);
-    color:white;
+    color:#000000;
     border-radius:var(--radius);
     padding:1.2rem 1.2rem;
     box-shadow:var(--shadow);
@@ -61,6 +86,11 @@ body { background:var(--bg); }
     padding:1rem;
     box-shadow:var(--shadow);
     margin-bottom:1rem;
+    transition:transform .18s ease, box-shadow .18s ease;
+}
+.card:hover{
+    transform:translateY(-2px);
+    box-shadow:0 14px 30px rgba(15,23,42,.12);
 }
 .soft-card{
     background:var(--surface-2);
@@ -86,12 +116,12 @@ body { background:var(--bg); }
     min-height:122px;
 }
 .kpi{
-    color:var(--primary);
+    color:#000000;
     font-size:1.85rem;
     font-weight:800;
 }
 .label{
-    color:var(--muted);
+    color:#000000;
     font-size:.92rem;
 }
 .badge{
@@ -101,12 +131,12 @@ body { background:var(--bg); }
     font-size:.82rem;
     font-weight:700;
 }
-.badge-green{background:var(--success-soft);color:var(--success);}
-.badge-red{background:var(--danger-soft);color:var(--danger);}
-.badge-amber{background:var(--warning-soft);color:var(--warning);}
-.badge-blue{background:var(--info-soft);color:var(--info);}
+.badge-green{background:var(--success-soft);color:#000000;}
+.badge-red{background:var(--danger-soft);color:#000000;}
+.badge-amber{background:var(--warning-soft);color:#000000;}
+.badge-blue{background:var(--info-soft);color:#000000;}
 .critical{
-    color:var(--danger);
+    color:#000000;
     font-weight:800;
 }
 .check-step{
@@ -117,30 +147,305 @@ body { background:var(--bg); }
     margin-bottom:.45rem;
 }
 .sms-box{
-    background:#111827;
-    color:#f9fafb;
+    background:#e5e7eb;
+    color:#000000;
     border-radius:var(--radius-sm);
     padding:.95rem;
     font-family:Consolas,monospace;
     font-size:.9rem;
 }
 .footer-note{
-    color:var(--muted);
+    color:#000000;
     font-size:.9rem;
 }
 .small-muted{
-    color:var(--muted);
+    color:#000000;
     font-size:.88rem;
+}
+.study-hero{
+    background:linear-gradient(135deg,#ecfeff 0%, #f0f9ff 100%);
+    border:1px solid #bae6fd;
+    border-radius:var(--radius);
+    padding:1rem;
+    margin-bottom:1rem;
+}
+.lesson-card{
+    background:#fff;
+    border:1px solid var(--border);
+    border-left:4px solid #94a3b8;
+    border-radius:var(--radius-sm);
+    padding:.75rem .85rem;
+    margin-bottom:.55rem;
+    animation:lessonReveal .34s ease both;
+}
+.lesson-card.complete{
+    border-left-color:#16a34a;
+    background:#f0fdf4;
+}
+.lesson-card.pending{
+    border-left-color:#0ea5e9;
+}
+.lesson-card.active{
+    border-left-color:#0f766e;
+    box-shadow:0 0 0 1px rgba(15,118,110,.22);
+    background:#f0fdfa;
+}
+.lesson-title{
+    font-weight:700;
+    color:#000000;
+    margin-bottom:.2rem;
+}
+.lesson-meta{
+    color:#000000;
+    font-size:.86rem;
+}
+.lesson-chip{
+    display:inline-block;
+    padding:.18rem .5rem;
+    border-radius:999px;
+    font-size:.77rem;
+    font-weight:700;
+    margin-right:.3rem;
+}
+.lesson-chip.done{background:#dcfce7;color:#000000;}
+.lesson-chip.todo{background:#e0f2fe;color:#000000;}
+.mini-progress-track{
+    margin-top:.45rem;
+    width:100%;
+    height:8px;
+    background:#e2e8f0;
+    border-radius:999px;
+    overflow:hidden;
+}
+.mini-progress-fill{
+    height:100%;
+    background:linear-gradient(90deg,#0ea5e9 0%, #0f766e 100%);
+    border-radius:999px;
+}
+.visual-banner{
+    background:linear-gradient(120deg,#f8fafc 0%, #ecfeff 48%, #f0fdf4 100%);
+    border:1px solid #bae6fd;
+    border-radius:var(--radius);
+    padding:1rem;
+    margin-bottom:1rem;
+}
+.visual-badge{
+    display:inline-block;
+    margin:.2rem .35rem .2rem 0;
+    padding:.25rem .55rem;
+    border-radius:999px;
+    font-size:.78rem;
+    font-weight:700;
+    background:#cffafe;
+    color:#000000;
+}
+.sticky-study-header{
+    position:sticky;
+    top:12px;
+    z-index:8;
+    background:linear-gradient(120deg,#ecfeff 0%, #f0fdf4 100%);
+    border:1px solid #99f6e4;
+    border-radius:var(--radius-sm);
+    padding:.75rem .85rem;
+    margin-bottom:.7rem;
+    box-shadow:0 8px 20px rgba(15,23,42,.10);
+}
+.chapter-thumbnail{
+    border-radius:var(--radius-sm);
+    border:1px solid #cbd5e1;
+    overflow:hidden;
+    margin-bottom:.8rem;
+}
+.crumbs{
+    color:#000000;
+    font-size:.84rem;
+    margin-bottom:.45rem;
+}
+.action-rail{
+    position:sticky;
+    top:12px;
+    background:#f8fafc;
+    border:1px solid #cbd5e1;
+    border-radius:var(--radius-sm);
+    padding:.85rem;
+    box-shadow:var(--shadow);
+}
+.rec-card{
+    background:#fff;
+    border:1px solid #cbd5e1;
+    border-radius:var(--radius-sm);
+    padding:.7rem;
+    min-height:140px;
+}
+.st-key-flashcard_touch button{
+    background:#ffffff;
+    border:1px solid var(--border);
+    color:#111827;
+    border-radius:var(--radius-sm);
+    padding:1rem;
+    min-height:170px;
+    text-align:left;
+    white-space:pre-wrap;
+    line-height:1.45;
+    font-weight:600;
+    transform-style:preserve-3d;
+    animation:flashFlipIn .35s ease;
+}
+.st-key-flashcard_touch button:hover{
+    border-color:#0f766e;
+    box-shadow:0 0 0 1px rgba(15,118,110,.2);
+}
+.st-key-flashcard_touch button p,
+.st-key-flashcard_touch button span,
+.st-key-flashcard_touch button div{
+    color:#111827 !important;
+}
+.flashcard-state{
+    color:#000000;
+    font-size:.82rem;
+    margin:.35rem 0 .55rem 0;
+}
+.welcome-login{
+    display:grid;
+    grid-template-columns:1.1fr .9fr;
+    gap:1rem;
+    align-items:center;
+}
+.welcome-copy h2{
+    margin:.1rem 0 .5rem 0;
+    color:#000000;
+}
+.welcome-copy p{
+    margin:.2rem 0;
+    color:#000000;
+    font-size:1.03rem;
+    line-height:1.55;
+}
+.welcome-note{
+    margin-top:.55rem;
+    background:#f0f9ff;
+    border:1px solid #bae6fd;
+    border-radius:12px;
+    padding:.7rem .8rem;
+    font-weight:700;
+    color:#000000;
+}
+.cna-carousel{
+    position:relative;
+    height:285px;
+    border-radius:14px;
+    overflow:hidden;
+    border:1px solid #cbd5e1;
+    background:#ffffff;
+}
+.cna-carousel img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    opacity:0;
+    animation:carouselFade 25s infinite;
+}
+.cna-carousel img:nth-child(1){animation-delay:0s;}
+.cna-carousel img:nth-child(2){animation-delay:5s;}
+.cna-carousel img:nth-child(3){animation-delay:10s;}
+.cna-carousel img:nth-child(4){animation-delay:15s;}
+.cna-carousel img:nth-child(5){animation-delay:20s;}
+@keyframes carouselFade{
+    0%, 16% {opacity:1;}
+    20%, 100% {opacity:0;}
+}
+@keyframes lessonReveal{
+    from{opacity:0; transform:translateY(6px);}
+    to{opacity:1; transform:translateY(0);}
+}
+@keyframes flashFlipIn{
+    0%{opacity:.3; transform:rotateY(-90deg) scale(.98);}
+    100%{opacity:1; transform:rotateY(0deg) scale(1);}
 }
 div[data-testid="stDataFrame"]{
     border:1px solid var(--border);
     border-radius:var(--radius);
     overflow:hidden;
 }
+
+/* Keep all UI copy readable by default, including checklists and quiz labels. */
+.stApp,
+.stApp p,
+.stApp li,
+.stApp span,
+.stApp label,
+.stApp .stMarkdown,
+.stApp .stCaption,
+.stApp .stRadio label,
+.stApp .stCheckbox label,
+.stApp .stToggle label,
+.stApp .stSelectbox label,
+.stApp .stMultiSelect label,
+.stApp .stTextInput label,
+.stApp .stTextArea label,
+.stApp .stNumberInput label,
+.stApp .stDateInput label,
+.stApp .stTimeInput label,
+.stApp .stSlider label,
+.stApp th,
+.stApp td {
+    color:#000000 !important;
+}
 @media (max-width:768px){
     .block-container{padding-left:.8rem;padding-right:.8rem;}
     .kpi{font-size:1.45rem;}
+    .welcome-login{grid-template-columns:1fr;}
+    .cna-carousel{height:240px;}
 }
+/* Tab button styling */
+[role="tab"] {
+    border: 3px solid #000000 !important;
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    padding: 0.65rem 1.2rem !important;
+    margin-right: 0.5rem !important;
+}
+[role="tab"][aria-selected="true"] {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+}
+[role="tab"][aria-selected="false"] {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}
+[role="tab"]:hover {
+    background-color: #f0f0f0 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+if st.session_state.ui_theme == "glass":
+    st.markdown("""
+<style>
+:root{
+    --bg:#ffffff;
+    --surface:rgba(255,255,255,.95);
+    --surface-2:rgba(255,255,255,.82);
+    --surface-3:rgba(236,254,255,.88);
+    --text:#000000;
+    --muted:#000000;
+    --primary:#22d3ee;
+    --primary-dark:#0891b2;
+    --border:rgba(148,163,184,.32);
+    --success:#86efac;
+    --warning:#fde047;
+    --danger:#fca5a5;
+    --info:#7dd3fc;
+}
+.card, .soft-card, .info-card, .metric-card, .study-hero, .lesson-card, .visual-banner, .sticky-study-header {
+    backdrop-filter:blur(10px);
+}
+.lesson-title{ color:#000000; }
+.main-hero{ background:linear-gradient(135deg,#cffafe 0%, #e0f2fe 100%); }
+.action-rail{ background:rgba(255,255,255,.82); border-color:rgba(148,163,184,.34); }
+.rec-card{ background:rgba(255,255,255,.85); border-color:rgba(148,163,184,.34); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -219,6 +524,68 @@ def missing_items(summary):
         items.append("Monitor countdown until 90-day TULIP window opens")
     return items
 
+texas_ceu_requirements = [
+    {
+        "Requirement": "24 hours of in-service education",
+        "Detail": "Required every 24 months for CNA renewal",
+        "Notes": "Includes general nursing assistant topics and state-approved training"
+    },
+    {
+        "Requirement": "Geriatrics training",
+        "Detail": "Required category content",
+        "Notes": "At least one course or contact hour in geriatric care"
+    },
+    {
+        "Requirement": "Dementia / Alzheimer's training",
+        "Detail": "Required category content",
+        "Notes": "At least one course or contact hour in dementia care"
+    },
+    {
+        "Requirement": "Annual infection-control training",
+        "Detail": "Required each year for renewal",
+        "Notes": "Must include Texas-specific infection prevention and safety"
+    },
+    {
+        "Requirement": "TULIP renewal window readiness",
+        "Detail": "Begins 90 days before license expiration",
+        "Notes": "Submit renewal during the open TULIP window"
+    },
+    {
+        "Requirement": "Employer verification support",
+        "Detail": "Form 5506-NAR if required by your employer",
+        "Notes": "Keep employer and facility verification information ready"
+    }
+]
+
+def ceu_requirement_status(summary):
+    return [
+        {
+            "Requirement": "24 in-service hours",
+            "Status": "Complete" if summary["hours"] >= 24 else "Pending",
+            "Progress": f"{summary['hours']}/24 hours"
+        },
+        {
+            "Requirement": "Geriatrics training",
+            "Status": "Complete" if summary["geriatric"] else "Pending",
+            "Progress": "Recorded" if summary["geriatric"] else "Missing"
+        },
+        {
+            "Requirement": "Dementia / Alzheimer's training",
+            "Status": "Complete" if summary["dementia"] else "Pending",
+            "Progress": "Recorded" if summary["dementia"] else "Missing"
+        },
+        {
+            "Requirement": "Annual infection-control training",
+            "Status": "Complete" if summary["infection"] else "Pending",
+            "Progress": "Recorded" if summary["infection"] else "Missing"
+        },
+        {
+            "Requirement": "TULIP window readiness",
+            "Status": "Open" if summary["tulip_days"] <= 0 else "Not open yet",
+            "Progress": f"{summary['tulip_days']} days until window" if summary["tulip_days"] > 0 else "Window open"
+        }
+    ]
+
 def make_5506_text(cna_row, facility_row, summary):
     return f"""
 TEXAS FORM 5506-NAR MOCK PRE-FILL SUMMARY
@@ -276,11 +643,149 @@ defaults = {
     "review_cards": set(),
     "written_answers": {},
     "skills_answers": {},
-    "skills_checks": {}
+    "skills_checks": {},
+    "chapter_quiz_answers": {},
+    "chapter_progress": {},
+    "quiz_history": {"written": [], "skills": []},
+    "written_timer_started_at": None,
+    "skills_timer_started_at": None,
+    "written_quiz_log_done": False,
+    "skills_quiz_log_done": False,
+    "last_selected_chapter": None,
+    # CEU & TULIP renewal tracking
+    "license_status": "Active",  # "Active" or "Expired"
+    "selected_ceus": [],  # Track selected CEU courses
+    "ceu_completion_tracking": {},  # Track hours by category
+    "renewal_checklist_items": {},  # Track checklist completion
+    "renewal_step_expanded": {},  # Track expanded renewal steps
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
+
+
+@st.cache_data(show_spinner=False)
+def load_markdown_content(file_path):
+    chapter_path = Path(__file__).resolve().parent / file_path
+    try:
+        return chapter_path.read_text(encoding="utf-8")
+    except Exception as exc:
+        return f"Unable to load chapter file: {exc}"
+
+
+def update_chapter_progress(chapter_key, complete):
+    progress = st.session_state.chapter_progress.copy()
+    progress[chapter_key] = complete
+    st.session_state.chapter_progress = progress
+
+
+def chapter_progress_summary():
+    total = len(get_all_chapters())
+    complete = sum(1 for completed in st.session_state.chapter_progress.values() if completed)
+    return complete, total
+
+
+def format_duration(total_seconds):
+    mins = total_seconds // 60
+    secs = total_seconds % 60
+    return f"{mins:02d}:{secs:02d}"
+
+
+def chapter_quiz_percent(title, module_info):
+    quiz = module_info.get("quiz", [])
+    if not quiz:
+        return 100
+    answers = st.session_state.chapter_quiz_answers.get(title, {})
+    if len(answers) < len(quiz):
+        return 0
+    correct = sum(1 for i, item in enumerate(quiz) if answers.get(i) == item["answer"])
+    return int((correct / len(quiz)) * 100)
+
+
+def chapter_mastered(title, module_info):
+    completed = st.session_state.chapter_progress.get(title, False)
+    quiz = module_info.get("quiz", [])
+    if not quiz:
+        return completed
+    return completed and chapter_quiz_percent(title, module_info) >= 80
+
+
+def render_view_visuals(view_key):
+    media = {
+        "a": {
+            "headline": "Interactive Learning Studio",
+            "sub": "Short visual cues and quick videos keep study sessions engaging and memorable.",
+            "badges": ["Flashcards", "Skills", "Exam Prep"],
+            "image": "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1200&q=80",
+            "video": "https://www.youtube.com/watch?v=3PmVJQUCm4E"
+        },
+        "b": {
+            "headline": "Renewal and CEU Momentum",
+            "sub": "Track progress visually and stay confident about TULIP deadlines.",
+            "badges": ["CEU Tracker", "TULIP Steps", "Renewal Alerts"],
+            "image": "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=80",
+            "video": "https://www.youtube.com/watch?v=2fYf2b6YfFM"
+        },
+        "c": {
+            "headline": "Facility Leadership Command Center",
+            "sub": "Use visual operations insights to support staff readiness and prevent compliance risk.",
+            "badges": ["Dashboard", "Risk Triage", "Action Center"],
+            "image": "https://images.unsplash.com/photo-1550831107-1553da8c8464?auto=format&fit=crop&w=1200&q=80",
+            "video": "https://www.youtube.com/watch?v=qTQ5YGQ5wE8"
+        }
+    }
+
+    payload = media.get(view_key)
+    if not payload:
+        return
+
+    st.markdown('<div class="visual-banner">', unsafe_allow_html=True)
+    st.markdown(f"### {payload['headline']}")
+    st.write(payload["sub"])
+    badges = "".join([f'<span class="visual-badge">{badge}</span>' for badge in payload["badges"]])
+    st.markdown(badges, unsafe_allow_html=True)
+    c1, c2 = st.columns([1.1, 1])
+    with c1:
+        st.image(payload["image"], use_container_width=True)
+    with c2:
+        st.video(payload["video"])
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+def render_quiz_history_panel(history_key, title):
+    history = st.session_state.quiz_history.get(history_key, [])
+    st.markdown(f"### {title}")
+    if not history:
+        st.info("No attempts recorded yet. Complete and grade a quiz to start tracking your growth.")
+        return
+
+    attempts = len(history)
+    best_pct = max(item["percent"] for item in history)
+    last_pct = history[-1]["percent"]
+    avg_pct = int(sum(item["percent"] for item in history) / attempts)
+
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        st.markdown(f'<div class="metric-card"><div class="kpi">{attempts}</div><div class="label">Attempts</div></div>', unsafe_allow_html=True)
+    with m2:
+        st.markdown(f'<div class="metric-card"><div class="kpi">{best_pct}%</div><div class="label">Best Score</div></div>', unsafe_allow_html=True)
+    with m3:
+        st.markdown(f'<div class="metric-card"><div class="kpi">{last_pct}%</div><div class="label">Last Score</div></div>', unsafe_allow_html=True)
+    with m4:
+        st.markdown(f'<div class="metric-card"><div class="kpi">{avg_pct}%</div><div class="label">Average Score</div></div>', unsafe_allow_html=True)
+
+    records = []
+    for idx, item in enumerate(reversed(history[-5:]), start=1):
+        records.append({
+            "Recent Attempt": idx,
+            "Date": item["timestamp"],
+            "Score": f"{item['score']}/{item['total']}",
+            "Percent": f"{item['percent']}%",
+            "Mode": "Timed" if item["timed_mode"] else "Practice",
+            "Time": item["duration"]
+        })
+    st.dataframe(pd.DataFrame(records), use_container_width=True, hide_index=True)
+
 
 # =========================================================
 # DATA
@@ -346,6 +851,24 @@ ceu_df = pd.DataFrame([
     {"record_id": 6, "cna_id": 3, "course_title": "Alzheimer's Support Foundations", "hours": 6, "geriatric_flag": False, "dementia_flag": True,  "infection_flag": False},
     {"record_id": 7, "cna_id": 3, "course_title": "Resident Rights Refresher", "hours": 5, "geriatric_flag": False, "dementia_flag": False, "infection_flag": False},
 ])
+
+PROMETRIC_SKILLS_SOURCE_URL = "https://www.prometric.com/files/FL_CNA_ClinicalSkillsChecklist.pdf"
+PROMETRIC_SKILLS_SOURCE_LABEL = "Prometric Clinical Skills Test Checklist (Florida CNA, 2014)"
+PROMETRIC_TX_CIB_SOURCE_URL = "https://www.prometric.com/files/Nurse-Aide/TX-CNA-CIB.pdf"
+PROMETRIC_TX_CIB_SOURCE_LABEL = "Prometric Texas CNA Candidate Information Bulletin (2020)"
+TX_HHS_CNA_MANUAL_SOURCE_URL = "https://www.hhs.texas.gov/sites/default/files/documents/doing-business-with-hhs/licensing-credentialing-regulation/nurse-aide/cna.pdf"
+TX_HHS_CNA_MANUAL_SOURCE_LABEL = "Texas HHS CNA Curriculum for Long-Term Care Facilities (March 2024)"
+PROMETRIC_VERIFIED_ALIGNMENT_LABEL = (
+    f"{PROMETRIC_SKILLS_SOURCE_LABEL} + "
+    f"{PROMETRIC_TX_CIB_SOURCE_LABEL} + "
+    f"{TX_HHS_CNA_MANUAL_SOURCE_LABEL}"
+)
+PROMETRIC_SKILLS_TRUST_NOTE = (
+    "Verified sources integrated for clinical-skills, Texas exam content, and Texas curriculum standards: "
+    f"[{PROMETRIC_SKILLS_SOURCE_LABEL}]({PROMETRIC_SKILLS_SOURCE_URL}) and "
+    f"[{PROMETRIC_TX_CIB_SOURCE_LABEL}]({PROMETRIC_TX_CIB_SOURCE_URL}), and "
+    f"[{TX_HHS_CNA_MANUAL_SOURCE_LABEL}]({TX_HHS_CNA_MANUAL_SOURCE_URL})."
+)
 
 flashcards = [
     {"category": "Infection Control", "front": "Why should hand hygiene be done before and after caring for a resident?", "back": "It helps reduce the spread of germs and protects both the resident and the caregiver."},
@@ -478,7 +1001,34 @@ flashcards = [
     {"category": "Documentation and Reporting", "front": "Why should unusual bruising, redness, or swelling be reported?", "back": "These may show injury or a change in condition."},
     {"category": "Documentation and Reporting", "front": "Why must documentation be entered for the correct resident?", "back": "Correct identification is necessary for safe, accurate records."},
     {"category": "Documentation and Reporting", "front": "Why is timely reporting important for the nurse aide role?", "back": "Fast reporting helps the care team respond sooner to problems."},
-    {"category": "Documentation and Reporting", "front": "Why should facility policy guide reporting and charting?", "back": "Following policy helps information stay consistent, safe, and properly handled."}
+    {"category": "Documentation and Reporting", "front": "Why should facility policy guide reporting and charting?", "back": "Following policy helps information stay consistent, safe, and properly handled."},
+
+    {"category": "Prometric Clinical Skills (Verified)", "front": "Which two skills are always scored in the Prometric clinical skills test?", "back": "Handwashing and Indirect Care are scored for every candidate."},
+    {"category": "Prometric Clinical Skills (Verified)", "front": "What are core Indirect Care behaviors observed across all skills?", "back": "Greet by name, explain care, ask preferences/comfort, use infection control, protect rights, and promote safety."},
+    {"category": "Prometric Clinical Skills (Verified)", "front": "During ambulation with a gait belt, where should the CNA stand?", "back": "At the side and slightly behind the resident while supporting with the gait belt."},
+    {"category": "Prometric Clinical Skills (Verified)", "front": "What is the checklist expectation for radial pulse timing?", "back": "Count for one full minute and record within +/- 4 bpm of the nurse measurement."},
+    {"category": "Prometric Clinical Skills (Verified)", "front": "For urinary output skill, when should gloves be removed?", "back": "Remove gloves before documenting intake/output after handling drainage bag or urine container."},
+    {"category": "Prometric Clinical Skills (Verified)", "front": "During feeding skill, how often should fluids be offered?", "back": "Offer fluids throughout feeding, at least every 2-3 bites of food."},
+    {"category": "Prometric Clinical Skills (Verified)", "front": "What transfer checkpoint is required before pivot transfer to wheelchair?", "back": "Move footrests out of the way and place non-skid footwear before standing the resident."},
+    {"category": "Prometric Clinical Skills (Verified)", "front": "In female catheter care, what direction is used for cleansing?", "back": "Wipe front to back, and clean catheter away from the body while stabilizing near the meatus."},
+
+    {"category": "Texas CNA CIB (Verified)", "front": "How many questions are on the Texas CNA written exam according to the CIB?", "back": "The written test has 60 multiple-choice questions."},
+    {"category": "Texas CNA CIB (Verified)", "front": "How much time is allowed for the Texas CNA written test?", "back": "The CIB lists 90 minutes for the written test."},
+    {"category": "Texas CNA CIB (Verified)", "front": "How many skills are scored in the Texas clinical skills exam?", "back": "Five skills are scored: three assigned skills plus Handwashing and Indirect Care."},
+    {"category": "Texas CNA CIB (Verified)", "front": "How many attempts are allowed in Texas before retraining is required?", "back": "Up to three attempts each for the clinical skills test and the written/oral test within 24 months."},
+    {"category": "Texas CNA CIB (Verified)", "front": "What happens after passing both Texas CNA exams?", "back": "Candidate information is sent for placement on the Texas Nurse Aide Registry."},
+    {"category": "Texas CNA CIB (Verified)", "front": "What must candidates bring to test day based on the CIB?", "back": "Authorization to Test letter, one current government-issued photo ID with signature, and a second matching ID."},
+    {"category": "Texas CNA CIB (Verified)", "front": "What footwear is required for the clinical skills test?", "back": "Flat, nonskid, closed-toed shoes are required."},
+    {"category": "Texas CNA CIB (Verified)", "front": "When should candidates arrive at the test site?", "back": "At least 30 minutes before the scheduled test appointment."},
+
+    {"category": "Texas HHS CNA Manual (Verified)", "front": "What is the core goal of the Texas HHS CNA curriculum?", "back": "Prepare nurse aides to provide person-centered basic care in long-term care facilities."},
+    {"category": "Texas HHS CNA Manual (Verified)", "front": "What three documentation actions are emphasized in the Texas HHS manual?", "back": "Observe, report, and document to the nurse."},
+    {"category": "Texas HHS CNA Manual (Verified)", "front": "What does OBRA focus on in Texas long-term care training?", "back": "Resident rights, restorative care, psychosocial care, and preventive care for maximum wellness."},
+    {"category": "Texas HHS CNA Manual (Verified)", "front": "How many total training hours are required in the Texas HHS nurse aide training program?", "back": "At least 100 total hours, including 60 classroom and 40 clinical hours."},
+    {"category": "Texas HHS CNA Manual (Verified)", "front": "What is required before any direct resident contact during training?", "back": "The first 16 hours of training must be completed before direct resident contact."},
+    {"category": "Texas HHS CNA Manual (Verified)", "front": "How often must nurse aides complete in-service education for renewal per the Texas HHS manual?", "back": "24 hours of in-service education every two years."},
+    {"category": "Texas HHS CNA Manual (Verified)", "front": "How does the Texas HHS manual define hand hygiene?", "back": "Washing with soap and water or correctly applying alcohol-based sanitizer."},
+    {"category": "Texas HHS CNA Manual (Verified)", "front": "What does person-centered care mean in LTC training?", "back": "Respecting resident choices and tailoring care, dining, and activities to resident preferences."}
 ]
 
 category_descriptions = {
@@ -494,6 +1044,9 @@ category_descriptions = {
     "Mental Health and Social Needs": "Support emotional well-being with patience, reassurance, and social connection.",
     "Restorative Care": "Encourage independence safely and follow restorative plans consistently.",
     "Documentation and Reporting": "Document observations accurately and report changes clearly.",
+    "Prometric Clinical Skills (Verified)": "Checklist-aligned checkpoints from the Prometric clinical skills source used in training and review.",
+    "Texas CNA CIB (Verified)": "Texas Candidate Information Bulletin facts for exam process, timing, and score requirements.",
+    "Texas HHS CNA Manual (Verified)": "Texas HHS curriculum and OBRA-aligned care standards for long-term care training.",
 }
 
 written_quiz = [
@@ -538,6 +1091,528 @@ written_quiz = [
         "choices": ["Argue with confusion", "Use calm redirection", "Rush the resident", "Mock repeated questions"],
         "answer": "Use calm redirection",
         "rationale": "Calm redirection is safer and more supportive than confrontation."
+    },
+    {
+        "q": "According to the verified Prometric checklist, which pair is always scored in the Clinical Skills Test?",
+        "choices": ["Blood pressure and feeding", "Handwashing and Indirect Care", "ROM and transfer", "Catheter care and bedpan"],
+        "answer": "Handwashing and Indirect Care",
+        "rationale": "Prometric identifies Handwashing and Indirect Care as required scored elements in every skills test."
+    },
+    {
+        "q": "Which behavior is part of Indirect Care in the verified checklist?",
+        "choices": ["Skip resident preferences to save time", "Ask about resident preferences during care", "Document before care starts", "Avoid communication during care"],
+        "answer": "Ask about resident preferences during care",
+        "rationale": "Indirect Care includes asking resident preferences, comfort, and maintaining rights/safety."
+    },
+    {
+        "q": "For the radial pulse skill, what timing is required in the verified checklist?",
+        "choices": ["15 seconds", "30 seconds", "45 seconds", "One full minute"],
+        "answer": "One full minute",
+        "rationale": "Prometric checklist requires counting radial pulse for one full minute."
+    },
+    {
+        "q": "According to the Texas CNA CIB, how many questions are on the written test?",
+        "choices": ["40", "50", "60", "75"],
+        "answer": "60",
+        "rationale": "The Texas CIB states the written knowledge test consists of 60 multiple-choice questions."
+    },
+    {
+        "q": "How much time does the Texas CNA CIB allow for the written test?",
+        "choices": ["60 minutes", "75 minutes", "90 minutes", "120 minutes"],
+        "answer": "90 minutes",
+        "rationale": "The Texas CIB specifies a 90-minute time limit for the written test."
+    },
+    {
+        "q": "Per the Texas CIB, what is required to pass the clinical skills test?",
+        "choices": ["Pass any 3 skills", "Pass all 5 scored skills", "Pass handwashing only", "Pass one random skill"],
+        "answer": "Pass all 5 scored skills",
+        "rationale": "Texas CIB states candidates must pass all five scored skills in the clinical skills test."
+    },
+    {
+        "q": "According to the Texas HHS CNA manual, what are the required NATCEP minimum training hours?",
+        "choices": ["80 total: 40 classroom + 40 clinical", "90 total: 50 classroom + 40 clinical", "100 total: 60 classroom + 40 clinical", "120 total: 60 classroom + 60 clinical"],
+        "answer": "100 total: 60 classroom + 40 clinical",
+        "rationale": "The Texas HHS CNA curriculum states NATCEP must be at least 100 clock hours, including 60 classroom and 40 clinical hours."
+    },
+    {
+        "q": "Before direct resident contact during training, the Texas HHS manual requires completion of:",
+        "choices": ["8 hours", "12 hours", "16 hours", "24 hours"],
+        "answer": "16 hours",
+        "rationale": "The first 16 hours of nurse aide training must be completed prior to any direct resident contact."
+    },
+    {
+        "q": "Which best reflects a Texas HHS curriculum objective for nurse aides?",
+        "choices": ["Prioritize speed over resident choice", "Provide person-centered care and protect resident rights", "Avoid documentation unless requested", "Perform only independent care planning"],
+        "answer": "Provide person-centered care and protect resident rights",
+        "rationale": "Course objectives emphasize person-centered care, resident rights, safety, and observation/reporting/documentation."
+    }
+]
+
+prometric_sample_test = [
+    {
+        "q": "A resident often carries a doll with her, treating it like her baby. One day she is wandering around crying that she can't find her baby. The nurse aide should",
+        "choices": [
+            "ask the resident where she last had the doll.",
+            "ask the activity department if they have any other dolls.",
+            "offer comfort to the resident and help her look for her baby.",
+            "let the other staff know the resident is very confused and should be watched closely."
+        ],
+        "answer": "offer comfort to the resident and help her look for her baby."
+    },
+    {
+        "q": "A nurse aide is asked to change a urinary drainage bag attached to an indwelling urinary catheter. The nurse aide has never done this before. The best response by the nurse aide is to",
+        "choices": [
+            "change the indwelling catheter at the same time.",
+            "ask another nurse aide to change the urinary drainage bag.",
+            "change the bag asking for help only if the nurse aide has problems.",
+            "ask a nurse to watch the nurse aide change the bag since it is the first time."
+        ],
+        "answer": "ask a nurse to watch the nurse aide change the bag since it is the first time."
+    },
+    {
+        "q": "Before feeding a resident, which of the following is the best reason to wash the resident's hands?",
+        "choices": [
+            "The resident may still touch his/her mouth or food.",
+            "It reduces the risk of spreading airborne diseases.",
+            "It improves resident morale and appetite.",
+            "The resident needs to keep meal routines."
+        ],
+        "answer": "The resident may still touch his/her mouth or food."
+    },
+    {
+        "q": "Which of the following is a job task performed by the nurse aide?",
+        "choices": [
+            "Participating in resident care planning conferences",
+            "Taking a telephone order from a physician",
+            "Giving medications to assigned residents",
+            "Changing sterile wound dressings"
+        ],
+        "answer": "Participating in resident care planning conferences"
+    },
+    {
+        "q": "Which of the following statements is true about range of motion (ROM) exercises?",
+        "choices": [
+            "Done just once a day",
+            "Help prevent strokes and paralysis",
+            "Require at least ten repetitions of each exercise",
+            "Are often performed during ADLs such as bathing or dressing"
+        ],
+        "answer": "Are often performed during ADLs such as bathing or dressing"
+    },
+    {
+        "q": "While the nurse aide tries to dress a resident who is confused, the resident keeps trying to grab a hairbrush. The nurse aide should",
+        "choices": [
+            "put the hairbrush away and out of sight.",
+            "give the resident the hairbrush to hold.",
+            "try to dress the resident more quickly.",
+            "restrain the resident's hand."
+        ],
+        "answer": "give the resident the hairbrush to hold."
+    },
+    {
+        "q": "A resident who is lying in bed suddenly becomes short of breath. After calling for help, the nurse aide's next action should be to",
+        "choices": [
+            "ask the resident to take deep breaths.",
+            "take the resident's vital signs.",
+            "raise the head of the bed.",
+            "elevate the resident's feet."
+        ],
+        "answer": "raise the head of the bed."
+    },
+    {
+        "q": "A resident who has cancer is expected to die within the next couple of days. Nursing care for this resident should focus on",
+        "choices": [
+            "helping the resident through the stages of grief.",
+            "providing for the resident's comfort.",
+            "keeping the resident's care routine, such as for bathing.",
+            "giving the resident a lot of quiet time and privacy."
+        ],
+        "answer": "providing for the resident's comfort."
+    },
+    {
+        "q": "While giving a bedbath, the nurse aide hears the alarm from a nearby door suddenly go off. The nurse aide should",
+        "choices": [
+            "wait a few minutes to see if the alarm stops.",
+            "report the alarm to the charge nurse immediately.",
+            "make the resident being bathed safe and go check the door right away.",
+            "stop the bedbath and go check on the location of all assigned residents."
+        ],
+        "answer": "make the resident being bathed safe and go check the door right away."
+    },
+    {
+        "q": "Gloves should be worn for which of the following procedures?",
+        "choices": [
+            "Emptying a urinary drainage bag",
+            "Brushing a resident's hair",
+            "Ambulating a resident",
+            "Feeding a resident"
+        ],
+        "answer": "Emptying a urinary drainage bag"
+    },
+    {
+        "q": "When walking a resident, a gait or transfer belt is often",
+        "choices": [
+            "worn around the nurse aide's waist for back support.",
+            "used to keep the resident positioned properly in the wheelchair.",
+            "used to help stand the resident, and then removed before walking.",
+            "put around the resident's waist to provide a way to hold onto the resident."
+        ],
+        "answer": "put around the resident's waist to provide a way to hold onto the resident."
+    },
+    {
+        "q": "Which of the following statements is true about residents who are restrained?",
+        "choices": [
+            "They are at greater risk for developing pressure sores.",
+            "They are at lower risk of developing pneumonia.",
+            "Their posture and alignment are improved.",
+            "They are not at risk for falling."
+        ],
+        "answer": "They are at greater risk for developing pressure sores."
+    },
+    {
+        "q": "A resident has diabetes. Which of the following is a common sign of a low blood sugar?",
+        "choices": ["Fever", "Shakiness", "Thirst", "Vomiting"],
+        "answer": "Shakiness"
+    },
+    {
+        "q": "When providing foot care to a resident it is important for the nurse aide to",
+        "choices": [
+            "remove calluses and corns.",
+            "check the feet for skin breakdown.",
+            "keep the water cool to prevent burns.",
+            "apply lotion, including between the toes."
+        ],
+        "answer": "check the feet for skin breakdown."
+    },
+    {
+        "q": "When feeding a resident, frequent coughing can be a sign the resident is",
+        "choices": ["choking.", "getting full.", "needs to drink more fluids.", "having difficulty swallowing."],
+        "answer": "having difficulty swallowing."
+    },
+    {
+        "q": "When a person is admitted to the nursing home, the nurse aide should expect that the resident will",
+        "choices": [
+            "have problems related to incontinence.",
+            "require a lot of assistance with personal care.",
+            "experience a sense of loss related to the life change.",
+            "adjust more quickly if admitted directly from the hospital."
+        ],
+        "answer": "experience a sense of loss related to the life change."
+    },
+    {
+        "q": "A resident gets dressed and comes out of his room wearing shoes that are from two different pairs. The nurse aide should",
+        "choices": [
+            "tease the resident by complimenting the resident's sense of style.",
+            "ask if the resident realizes that the shoes do not match.",
+            "remind the resident that the nurse aide can dress the resident.",
+            "ask if the resident lost some of his shoes."
+        ],
+        "answer": "ask if the resident realizes that the shoes do not match."
+    },
+    {
+        "q": "A resident's wife recently died. The resident is now staying in his room all the time and eating very little. The best response by the nurse aide is to",
+        "choices": [
+            "remind the resident to be thankful for the years he shared with his wife.",
+            "tell the resident that he needs to get out of his room at least once a day.",
+            "understand the resident is grieving and give him chances to talk.",
+            "avoid mentioning his wife when caring for him."
+        ],
+        "answer": "understand the resident is grieving and give him chances to talk."
+    },
+    {
+        "q": "When a resident refuses a bedbath, the nurse aide should",
+        "choices": [
+            "offer the resident a bribe.",
+            "wait awhile and then ask the resident again.",
+            "remind the resident that people who smell don't have friends.",
+            "tell the resident that nursing home policy requires daily bathing."
+        ],
+        "answer": "wait awhile and then ask the resident again."
+    },
+    {
+        "q": "When a resident is combative and trying to hit the nurse aide, it is important for the nurse aide to",
+        "choices": [
+            "show the resident that the nurse aide is in control.",
+            "call for help to make sure there are witnesses.",
+            "explain that if the resident is not calm a restraint may be applied.",
+            "step back to protect self from harm while speaking in a calm manner."
+        ],
+        "answer": "step back to protect self from harm while speaking in a calm manner."
+    },
+    {
+        "q": "During lunch in the dining room, a resident begins yelling and throws a spoon at the nurse aide. The best response by the nurse aide is to",
+        "choices": [
+            "remain calm and ask what is upsetting the resident.",
+            "begin removing all the other residents from the dining room.",
+            "scold the resident and ask the resident to leave the dining room immediately.",
+            "remove the resident's plate, fork, knife, and cup so there is nothing else to throw."
+        ],
+        "answer": "remain calm and ask what is upsetting the resident."
+    },
+    {
+        "q": "Which of the following questions asked to the resident is most likely to encourage conversation?",
+        "choices": [
+            "Are you feeling tired today?",
+            "Do you want to wear this outfit?",
+            "What are your favorite foods?",
+            "Is this water warm enough?"
+        ],
+        "answer": "What are your favorite foods?"
+    },
+    {
+        "q": "When trying to communicate with a resident who speaks a different language than the nurse aide, the nurse aide should",
+        "choices": [
+            "use pictures and gestures.",
+            "face the resident and speak softly when talking.",
+            "repeat words often if the resident does not understand.",
+            "assume when the resident nods his/her head that the message is understood."
+        ],
+        "answer": "use pictures and gestures."
+    },
+    {
+        "q": "While walking down the hall, a nurse aide looks into a resident's room and sees another nurse aide hitting a resident. The nurse aide is expected to",
+        "choices": [
+            "contact the state agency that inspects the nursing facility.",
+            "enter the room immediately to provide for the resident's safety.",
+            "wait to confront the nurse aide when he/she leaves the resident's room.",
+            "check the resident for any signs of injury after the nurse aide leaves the room."
+        ],
+        "answer": "enter the room immediately to provide for the resident's safety."
+    },
+    {
+        "q": "Before touching a resident who is crying to offer comfort, the nurse aide should consider",
+        "choices": [
+            "the resident's recent vital signs.",
+            "the resident's cultural background.",
+            "whether the resident has been sad recently.",
+            "whether the resident has family that visits routinely."
+        ],
+        "answer": "the resident's cultural background."
+    },
+    {
+        "q": "When a resident is expressing anger, the nurse aide should",
+        "choices": [
+            "correct the resident's misperceptions.",
+            "ask the resident to speak in a kinder tone.",
+            "listen closely to the resident's concerns.",
+            "remind the resident that everyone gets angry."
+        ],
+        "answer": "listen closely to the resident's concerns."
+    },
+    {
+        "q": "When giving a backrub, the nurse aide should",
+        "choices": [
+            "apply lotion to the back directly from the bottle.",
+            "keep the resident covered as much as possible.",
+            "leave extra lotion on the skin when completing the procedure.",
+            "expect the resident to lie on his/her stomach."
+        ],
+        "answer": "keep the resident covered as much as possible."
+    },
+    {
+        "q": "A nurse aide finds a resident looking in the refrigerator at the nurses' station at 5 a.m. The resident, who is confused, explains he needs breakfast before he leaves for work. The best response by the nurse aide is to",
+        "choices": [
+            "help the resident back to his room and into bed.",
+            "ask the resident about his job and if he is hungry.",
+            "tell him that residents are not allowed in the nurses' station.",
+            "remind him that he is retired from his job and in a nursing home."
+        ],
+        "answer": "ask the resident about his job and if he is hungry."
+    },
+    {
+        "q": "Which of the following is true about caring for a resident who wears a hearing aid?",
+        "choices": [
+            "Apply hairspray after the hearing aid is in place.",
+            "Remove the hearing aid before showering.",
+            "Clean the earmold and battery case with water daily, drying completely.",
+            "Replace batteries weekly."
+        ],
+        "answer": "Remove the hearing aid before showering."
+    },
+    {
+        "q": "Residents with Parkinson's disease often require assistance with walking because they",
+        "choices": [
+            "become confused and forget how to take steps without help.",
+            "have poor attention skills and do not notice safety problems.",
+            "have visual problems that require special glasses.",
+            "have a shuffling walk and tremors."
+        ],
+        "answer": "have a shuffling walk and tremors."
+    },
+    {
+        "q": "A resident who is inactive is at risk of constipation. In addition to increased activity and exercise, which of the following actions helps to prevent constipation?",
+        "choices": ["Adequate fluid intake", "Regular mealtimes", "High protein diet", "Low fiber diet"],
+        "answer": "Adequate fluid intake"
+    },
+    {
+        "q": "A resident has an indwelling urinary catheter. While making rounds, the nurse aide notices that there is no urine in the drainage bag. The nurse aide should first",
+        "choices": [
+            "ask the resident to try urinating.",
+            "offer the resident fluid to drink.",
+            "check for kinks in the tubing.",
+            "obtain a new urinary drainage bag."
+        ],
+        "answer": "check for kinks in the tubing."
+    },
+    {
+        "q": "A resident who is incontinent of urine has an increased risk of developing",
+        "choices": ["dementia.", "urinary tract infections.", "pressure sores.", "dehydration."],
+        "answer": "pressure sores."
+    },
+    {
+        "q": "When cleansing the genital area during perineal care, the nurse aide should",
+        "choices": [
+            "cleanse the penis with a circular motion starting from the base and moving toward the tip.",
+            "replace the foreskin when pushed back to cleanse an uncircumcised penis.",
+            "cleanse the rectal area first, before cleansing the genital area.",
+            "use the same area on the washcloth for each washing and rinsing stroke for a female resident."
+        ],
+        "answer": "replace the foreskin when pushed back to cleanse an uncircumcised penis."
+    },
+    {
+        "q": "Which of the following is considered a normal age-related change?",
+        "choices": ["Dementia", "Contractures", "Bladder holding less urine", "Wheezing when breathing"],
+        "answer": "Bladder holding less urine"
+    },
+    {
+        "q": "A resident is on a bladder retraining program. The nurse aide can expect the resident to",
+        "choices": [
+            "have a fluid intake restriction to prevent sudden urges to urinate.",
+            "wear an incontinent brief in case of an accident.",
+            "have an indwelling urinary catheter.",
+            "have a schedule for toileting."
+        ],
+        "answer": "have a schedule for toileting."
+    },
+    {
+        "q": "A resident who has stress incontinence",
+        "choices": [
+            "will have an indwelling urinary catheter.",
+            "should wear an incontinent brief at night.",
+            "may leak urine when laughing or coughing.",
+            "needs toileting every 1-2 hours throughout the day."
+        ],
+        "answer": "may leak urine when laughing or coughing."
+    },
+    {
+        "q": "The doctor has told the resident that his cancer is growing and that he is dying. When the resident tells the nurse aide that there is a mistake, the nurse aide should",
+        "choices": [
+            "understand that denial is a normal reaction.",
+            "remind the resident the doctor would not lie.",
+            "suggest the resident ask for more tests.",
+            "ask if the resident is afraid of dying."
+        ],
+        "answer": "understand that denial is a normal reaction."
+    },
+    {
+        "q": "A slipknot is used when securing a restraint so that",
+        "choices": [
+            "the restraint cannot be removed by the resident.",
+            "the restraint can be removed quickly when needed.",
+            "body alignment is maintained while wearing the restraint.",
+            "it can be easily observed whether the restraint is applied correctly."
+        ],
+        "answer": "the restraint can be removed quickly when needed."
+    },
+    {
+        "q": "When using personal protective equipment (PPE) the nurse aide correctly follows Standard Precautions when wearing",
+        "choices": [
+            "double gloves when providing perineal care to a resident.",
+            "a mask and gown while feeding a resident that coughs.",
+            "gloves to remove a resident's bedpan.",
+            "gloves while ambulating a resident."
+        ],
+        "answer": "gloves to remove a resident's bedpan."
+    },
+    {
+        "q": "To help prevent resident falls, the nurse aide should",
+        "choices": [
+            "always raise siderails when any resident is in his/her bed.",
+            "leave residents' beds at the lowest level when care is complete.",
+            "encourage residents to wear larger-sized, loose-fitting clothing.",
+            "remind residents who use call lights that they need to wait patiently for staff."
+        ],
+        "answer": "leave residents' beds at the lowest level when care is complete."
+    },
+    {
+        "q": "As the nurse aide begins his/her assignment, which of the following should the nurse aide do first?",
+        "choices": [
+            "Collect linen supplies for the shift",
+            "Check all the nurse aide's assigned residents",
+            "Assist a resident that has called for assistance to get off the toilet",
+            "Start bathing a resident that has physical therapy in one hour"
+        ],
+        "answer": "Assist a resident that has called for assistance to get off the toilet"
+    },
+    {
+        "q": "Which of the following would affect a nurse aide's status on the state's nurse aide registry and also cause the nurse aide to be ineligible to work in a nursing home?",
+        "choices": [
+            "Having been terminated from another facility for repeated tardiness",
+            "Missing a mandatory infection control inservice training program",
+            "Failing to show for work without calling to report the absence",
+            "Having a finding for resident neglect"
+        ],
+        "answer": "Having a finding for resident neglect"
+    },
+    {
+        "q": "To help prevent the spread of germs between patients, nurse aides should",
+        "choices": [
+            "wear gloves when touching residents.",
+            "hold supplies and linens away from their uniforms.",
+            "wash hands for at least two minutes after each resident contact.",
+            "warn residents that holding hands spreads germs."
+        ],
+        "answer": "hold supplies and linens away from their uniforms."
+    },
+    {
+        "q": "When a sink has hand-control faucets, the nurse aide should use",
+        "choices": [
+            "a paper towel to turn the water on.",
+            "a paper towel to turn the water off.",
+            "an elbow, if possible, to turn the faucet controls on and off.",
+            "bare hands to turn the faucet controls both on and off."
+        ],
+        "answer": "a paper towel to turn the water off."
+    },
+    {
+        "q": "When moving a resident up in bed who is able to move with assistance, the nurse aide should",
+        "choices": [
+            "position self with knees straight and bent at waist.",
+            "use a gait or transfer belt to assist with the repositioning.",
+            "pull the resident up holding onto one side of the drawsheet at a time.",
+            "bend the resident's knees and ask the resident to push with his/her feet."
+        ],
+        "answer": "bend the resident's knees and ask the resident to push with his/her feet."
+    },
+    {
+        "q": "The resident's weight is obtained routinely as a way to check the resident's",
+        "choices": ["growth and development.", "adjustment to the facility.", "nutrition and health.", "activity level."],
+        "answer": "nutrition and health."
+    },
+    {
+        "q": "Which of the following is a right that is included in the Resident's Bill of Rights?",
+        "choices": [
+            "To have staff available that speak different languages on each shift",
+            "To have payment plan options that are based on financial need",
+            "To have religious services offered at the facility daily",
+            "To make decisions and participate in own care"
+        ],
+        "answer": "To make decisions and participate in own care"
+    },
+    {
+        "q": "Which of the following, if observed as a sudden change in the resident, is considered a possible warning sign of a stroke?",
+        "choices": ["Dementia", "Contractures", "Slurred speech", "Irregular heartbeat"],
+        "answer": "Slurred speech"
+    },
+    {
+        "q": "Considering the resident's activity, which of the following sets of vital signs should be reported to the charge nurse immediately?",
+        "choices": [
+            "Resting: 98.6°-98-32",
+            "After eating: 97.0°-64-24",
+            "After walking exercise: 98.2°-98-28",
+            "While watching television: 98.8°-72-14"
+        ],
+        "answer": "Resting: 98.6°-98-32"
     }
 ]
 
@@ -565,10 +1640,93 @@ skills_quiz = [
         "choices": ["Force the transfer", "Ignore it and continue", "Protect the resident and call for help", "Leave the resident alone"],
         "answer": "Protect the resident and call for help",
         "rationale": "Resident safety comes first during any change in condition."
+    },
+    {
+        "q": "During feeding skill, verified checklist guidance says to offer fluids:",
+        "choices": ["Only at start of meal", "Only at end of meal", "At least every 2-3 bites", "Only if resident requests"],
+        "answer": "At least every 2-3 bites",
+        "rationale": "Prometric feeding checkpoint specifies offering fluids throughout feeding at least every 2-3 bites."
+    },
+    {
+        "q": "For bed-to-wheelchair pivot transfer, what must be done before standing?",
+        "choices": ["Remove shoes", "Move footrests out of the way", "Keep wheelchair far from bed", "Skip gait belt"],
+        "answer": "Move footrests out of the way",
+        "rationale": "Prometric transfer checklist includes moving footrests and preparing a close, safe pivot setup."
+    },
+    {
+        "q": "In female catheter care, correct cleansing direction is:",
+        "choices": ["Back to front", "Side to side", "Front to back", "Any direction if rinsed"],
+        "answer": "Front to back",
+        "rationale": "Prometric checklist requires front-to-back cleansing and cleaning catheter away from the body."
+    },
+    {
+        "q": "On Texas test day, what arrival time does the CIB recommend?",
+        "choices": ["Exactly at start time", "10 minutes early", "At least 30 minutes early", "1 hour early only for oral exam"],
+        "answer": "At least 30 minutes early",
+        "rationale": "Texas CIB advises arriving at least 30 minutes before the scheduled appointment."
+    },
+    {
+        "q": "Which item is required for the Texas clinical skills exam attire?",
+        "choices": ["Open-toe footwear", "Flat nonskid closed-toed shoes", "Business formal shoes", "Socks only"],
+        "answer": "Flat nonskid closed-toed shoes",
+        "rationale": "The Texas CIB requires flat, nonskid, closed-toed shoes for the clinical skills test."
+    },
+    {
+        "q": "If a candidate is absent or too late for Texas CNA testing, the CIB says they are treated as:",
+        "choices": ["Auto-rescheduled free", "Deferred with no fee", "No show and must pay exam fee to reschedule", "Passed written but not skills"],
+        "answer": "No show and must pay exam fee to reschedule",
+        "rationale": "Texas CIB indicates absent/late candidates are no-shows and must repay the exam fee to reschedule."
+    },
+    {
+        "q": "Texas HHS curriculum emphasizes which sequence during routine care findings?",
+        "choices": ["Document, then observe", "Observe, report, and document to the nurse", "Report only if family requests", "Observe only unusual behaviors"],
+        "answer": "Observe, report, and document to the nurse",
+        "rationale": "Procedural guidelines in the Texas HHS CNA manual emphasize observing, reporting, and documenting findings to the nurse."
+    },
+    {
+        "q": "For certification renewal standards noted in the Texas HHS manual, nurse aides need in-service education every two years of:",
+        "choices": ["12 hours", "16 hours", "20 hours", "24 hours"],
+        "answer": "24 hours",
+        "rationale": "The curriculum notes 24 hours of in-service education every two years for renewal standards."
+    },
+    {
+        "q": "Which answer matches person-centered care principles in the Texas HHS manual?",
+        "choices": ["Set one schedule for all residents", "Respect each resident's care and activity preferences", "Do tasks without explanation", "Limit resident choices to save time"],
+        "answer": "Respect each resident's care and activity preferences",
+        "rationale": "Person-centered care in the Texas HHS curriculum focuses on honoring resident preferences, dignity, and choices."
     }
 ]
 
 clinical_skills = {
+    "Texas HHS Curriculum Essentials (Verified)": [
+        "Start each care interaction with person-centered communication and resident choice.",
+        "Protect and promote resident rights, privacy, and dignity at all times.",
+        "Use hand hygiene and infection-control practices before and after care.",
+        "Integrate safety checks when entering and leaving resident care areas.",
+        "Apply OBRA-aligned focus: restorative, psychosocial, and preventive care.",
+        "Observe resident status continuously and identify changes from baseline.",
+        "Report and document findings to the supervising nurse accurately and promptly.",
+        "CRITICAL SAFETY STEP: Complete only trained/proficient tasks and escalate concerns immediately to the nurse."
+    ],
+    "Texas CIB Exam Essentials (Verified)": [
+        "Arrive at least 30 minutes before your scheduled testing appointment.",
+        "Bring ATT letter, one current government-issued photo ID with signature, and a second matching ID.",
+        "Wear flat, nonskid, closed-toed shoes for the clinical skills test.",
+        "Understand that five skills are scored (three assigned skills plus Handwashing and Indirect Care).",
+        "Pass all five scored skills to pass the clinical skills exam.",
+        "Complete the written test as 60 multiple-choice questions in 90 minutes.",
+        "Know attempt limits: three attempts each for skills and written/oral within 24 months.",
+        "CRITICAL SAFETY STEP: Follow test-site rules and required identification exactly to avoid denial/no-show status."
+    ],
+    "Prometric Indirect Care (Verified)": [
+        "Greet resident, address by name, and introduce yourself.",
+        "Explain care before beginning and during care.",
+        "Ask resident preferences during care.",
+        "Use standard precautions and infection-control measures.",
+        "Ask about comfort/needs during care and before completion.",
+        "Promote resident rights during care.",
+        "CRITICAL SAFETY STEP: Promote resident safety throughout all care tasks."
+    ],
     "Handwashing": [
         "Wet hands and wrists under warm running water.",
         "Apply soap.",
@@ -719,8 +1877,33 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+st.markdown("""
+<div class="card welcome-login">
+    <div class="welcome-copy">
+        <h2>Welcome to Your CNA Learning Home</h2>
+        <p>Thank you for your service and your commitment to safe, compassionate care.</p>
+        <p>This space is built to support you with confidence, clarity, and a friendly step-by-step path for studying and renewal.</p>
+        <p>Whether you are preparing for exams, staying current with CEUs, or guiding your team, we are glad you are here.</p>
+        <div class="welcome-note">You make a real difference every shift. We appreciate you.</div>
+    </div>
+    <div class="cna-carousel" aria-label="CNA and nurse smiling carousel">
+        <img src="https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1400&q=80" alt="Smiling nurse with confidence" />
+        <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=1400&q=80" alt="Caring healthcare professionals smiling" />
+        <img src="https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=1400&q=80" alt="Nurses smiling in clinical setting" />
+        <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=1400&q=80" alt="Friendly nurse team portrait" />
+        <img src="https://images.unsplash.com/photo-1612277795421-9bc7706a4a41?auto=format&fit=crop&w=1400&q=80" alt="Healthcare worker smiling with patient care focus" />
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
 with st.sidebar:
     st.header("Navigation")
+    glass_mode = st.toggle("Dark Glass Theme", value=st.session_state.ui_theme == "glass", key="glass_theme_toggle")
+    selected_theme = "glass" if glass_mode else "light"
+    if selected_theme != st.session_state.ui_theme:
+        st.session_state.ui_theme = selected_theme
+        st.rerun()
+
     view = st.radio(
         "Choose your path",
         [
@@ -736,6 +1919,8 @@ with st.sidebar:
         st.caption("Track renewal progress, review in-service requirements, and stay ready for the TULIP window.")
     else:
         st.caption("Monitor facility-level DON compliance, verification tasks, and CNA renewal support workflows.")
+    st.markdown("---")
+    st.caption("Lesson intro videos can be updated in chapter_videos.json")
     st.markdown("---")
     st.caption("Built for students, active CNAs, and nursing facility leadership.")
     st.markdown("### Quick start")
@@ -754,6 +1939,8 @@ if view == "View A: Texas CNA Academy":
         '<div class="info-card">Focus on mastery, practice written questions, and simulate clinical skill checklists. Use the tabs to keep your review structured and efficient.</div>',
         unsafe_allow_html=True
     )
+    st.info(PROMETRIC_SKILLS_TRUST_NOTE)
+    render_view_visuals("a")
 
     mastered = len(st.session_state.mastered_cards)
     total_flash = len(flashcards)
@@ -788,14 +1975,17 @@ if view == "View A: Texas CNA Academy":
     st.write(f"Readiness score: **{readiness_pct}%**")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
         "Study Tracks",
         "Flashcards",
         "Written Quiz",
         "Clinical Skills",
         "Skills Quiz",
+        "Curriculum Modules",
+        "Study Plan",
         "Exam Tips",
-        "Texas CNA Success"
+        "Texas CNA Success",
+        "Prometric Sample Test"
     ])
 
     with tab1:
@@ -858,29 +2048,54 @@ if view == "View A: Texas CNA Academy":
                     f"""
                     <div class="soft-card">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
-                            <span style="font-size:0.95rem; color:#475569; font-weight:700;">{card['category']}</span>
-                            <span style="font-size:0.90rem; color:#0f766e;">{st.session_state.flash_index + 1}/{len(filtered_flashcards)}</span>
+                            <span style="font-size:0.95rem; color:#000000; font-weight:700;">{card['category']}</span>
+                            <span style="font-size:0.90rem; color:#000000;">{st.session_state.flash_index + 1}/{len(filtered_flashcards)}</span>
                         </div>
                         <h3>{'Answer' if st.session_state.flash_flip else 'Question'}</h3>
-                        <p style="font-size:1.06rem; line-height:1.6;">{card['back'] if st.session_state.flash_flip else card['front']}</p>
+                        <p class="small-muted">Tap the card below to flip.</p>
                     </div>
                     """, unsafe_allow_html=True
                 )
+                st.markdown(
+                    f'<div class="flashcard-state">Showing: <strong>{"Answer" if st.session_state.flash_flip else "Question"}</strong></div>',
+                    unsafe_allow_html=True
+                )
+
+                flashcard_bg = "#ffffff"
+                flashcard_border = "#111827" if st.session_state.flash_flip else "#d1d5db"
+                flashcard_font_size = "1.22rem" if st.session_state.flash_flip else "1.42rem"
+                flashcard_font_weight = "700" if st.session_state.flash_flip else "800"
+                st.markdown(
+                    f"""
+                    <style>
+                    .st-key-flashcard_touch button {{
+                        background:{flashcard_bg} !important;
+                        border-color:{flashcard_border} !important;
+                        color:#111827 !important;
+                        font-size:{flashcard_font_size} !important;
+                        font-weight:{flashcard_font_weight} !important;
+                        line-height:1.55 !important;
+                    }}
+                    </style>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                flash_label = f"{'Answer' if st.session_state.flash_flip else 'Question'}\n\n{card['back'] if st.session_state.flash_flip else card['front']}"
+                if st.button(flash_label, key="flashcard_touch", use_container_width=True):
+                    st.session_state.flash_flip = not st.session_state.flash_flip
+                    st.rerun()
 
                 progress = (st.session_state.flash_index + 1) / len(filtered_flashcards)
                 st.progress(progress)
 
-                nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
+                nav_col1, nav_col2 = st.columns([1, 1])
                 with nav_col1:
                     if st.button("🩺 Previous", use_container_width=True):
                         st.session_state.flash_index = (st.session_state.flash_index - 1) % len(filtered_flashcards)
                         st.session_state.flash_flip = False
                         st.rerun()
                 with nav_col2:
-                    if st.button("Flip Card", use_container_width=True):
-                        st.session_state.flash_flip = not st.session_state.flash_flip
-                        st.rerun()
-                with nav_col3:
                     if st.button("Next 🩺", use_container_width=True):
                         st.session_state.flash_index = (st.session_state.flash_index + 1) % len(filtered_flashcards)
                         st.session_state.flash_flip = False
@@ -946,6 +2161,28 @@ if view == "View A: Texas CNA Academy":
     with tab3:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("### Written Practice Quiz")
+        st.caption(f"Verified skills-source alignment: {PROMETRIC_VERIFIED_ALIGNMENT_LABEL}")
+        written_key = "written_quiz_submitted"
+        if written_key not in st.session_state:
+            st.session_state[written_key] = False
+
+        timed_written = st.toggle("Enable timed mode (10 minutes)", key="written_timed_mode")
+        if timed_written:
+            t1, t2 = st.columns(2)
+            with t1:
+                if st.button("Start / Restart Written Timer", use_container_width=True, key="start_written_timer"):
+                    st.session_state.written_timer_started_at = datetime.now().isoformat()
+                    st.rerun()
+            with t2:
+                if st.session_state.written_timer_started_at:
+                    elapsed_written = int((datetime.now() - datetime.fromisoformat(st.session_state.written_timer_started_at)).total_seconds())
+                    remaining_written = max(0, 600 - elapsed_written)
+                    st.markdown(f"**Time left:** {format_duration(remaining_written)}")
+                    if remaining_written == 0:
+                        st.error("Time is up. Grade now or reset for a new timed attempt.")
+                else:
+                    st.markdown("**Timer status:** Not started")
+
         for i, item in enumerate(written_quiz):
             st.markdown(f"**Q{i+1}. {item['q']}**")
             ans = st.radio(
@@ -956,19 +2193,79 @@ if view == "View A: Texas CNA Academy":
             )
             if ans:
                 st.session_state.written_answers[i] = ans
-                if ans == item["answer"]:
-                    st.success(f"Correct. {item['rationale']}")
-                else:
-                    st.error(f"Incorrect. Correct answer: {item['answer']}. {item['rationale']}")
             st.markdown("---")
-        if len(st.session_state.written_answers) == len(written_quiz):
+
+        answered_written = len(st.session_state.written_answers)
+        st.markdown(f"**Progress:** {answered_written}/{len(written_quiz)} answered")
+        st.progress(answered_written / len(written_quiz) if written_quiz else 0)
+
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("Grade Written Quiz", use_container_width=True, key="grade_written_quiz"):
+                st.session_state[written_key] = True
+                st.session_state.written_quiz_log_done = False
+        with c2:
+            if st.button("Reset Written Quiz", use_container_width=True, key="reset_written_quiz"):
+                st.session_state.written_answers = {}
+                st.session_state[written_key] = False
+                st.session_state.written_timer_started_at = None
+                st.session_state.written_quiz_log_done = False
+                st.rerun()
+
+        if st.session_state[written_key]:
+            if answered_written < len(written_quiz):
+                st.warning("Please answer all written quiz questions before grading.")
+            else:
+                score = sum(1 for i, q in enumerate(written_quiz) if st.session_state.written_answers.get(i) == q["answer"])
+                pct_score = int((score / len(written_quiz)) * 100)
+
+                elapsed_written = 0
+                if timed_written and st.session_state.written_timer_started_at:
+                    elapsed_written = int((datetime.now() - datetime.fromisoformat(st.session_state.written_timer_started_at)).total_seconds())
+
+                if pct_score >= 80:
+                    st.success(f"Written quiz score: {score}/{len(written_quiz)} ({pct_score}%). Excellent work.")
+                else:
+                    st.warning(f"Written quiz score: {score}/{len(written_quiz)} ({pct_score}%). Review rationales and retry.")
+
+                if timed_written:
+                    if not st.session_state.written_timer_started_at:
+                        st.warning("Timed mode was enabled, but timer was not started.")
+                    else:
+                        time_status = "within" if elapsed_written <= 600 else "over"
+                        st.info(f"Timed attempt duration: {format_duration(elapsed_written)} ({time_status} the 10-minute target).")
+
+                if not st.session_state.written_quiz_log_done:
+                    history = st.session_state.quiz_history
+                    history.setdefault("written", []).append({
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        "score": score,
+                        "total": len(written_quiz),
+                        "percent": pct_score,
+                        "timed_mode": timed_written,
+                        "duration": format_duration(elapsed_written) if timed_written and st.session_state.written_timer_started_at else "--:--"
+                    })
+                    st.session_state.quiz_history = history
+                    st.session_state.written_quiz_log_done = True
+
+                for i, item in enumerate(written_quiz):
+                    selected = st.session_state.written_answers.get(i)
+                    if selected == item["answer"]:
+                        st.success(f"Q{i+1}: Correct. {item['rationale']}")
+                    else:
+                        st.error(f"Q{i+1}: Incorrect. Correct answer: {item['answer']}. {item['rationale']}")
+        elif len(st.session_state.written_answers) == len(written_quiz):
             score = sum(1 for i, q in enumerate(written_quiz) if st.session_state.written_answers.get(i) == q["answer"])
             st.info(f"Written quiz score: {score}/{len(written_quiz)}")
+
+        st.markdown("---")
+        render_quiz_history_panel("written", "Written Quiz History")
         st.markdown('</div>', unsafe_allow_html=True)
 
     with tab4:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("### Clinical Skills Checklists")
+        st.caption(f"Verified skills-source alignment: {PROMETRIC_VERIFIED_ALIGNMENT_LABEL}")
         chosen_skill = st.selectbox("Choose a Prometric-style skill", list(clinical_skills.keys()))
         st.markdown('<div class="info-card">Focus especially on hand hygiene, privacy, communication, safe setup, accurate measurement, and reporting concerns.</div>', unsafe_allow_html=True)
 
@@ -994,6 +2291,28 @@ if view == "View A: Texas CNA Academy":
     with tab5:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("### Skills Quiz")
+        st.caption(f"Verified skills-source alignment: {PROMETRIC_VERIFIED_ALIGNMENT_LABEL}")
+        skills_key = "skills_quiz_submitted"
+        if skills_key not in st.session_state:
+            st.session_state[skills_key] = False
+
+        timed_skills = st.toggle("Enable timed mode (10 minutes)", key="skills_timed_mode")
+        if timed_skills:
+            t1, t2 = st.columns(2)
+            with t1:
+                if st.button("Start / Restart Skills Timer", use_container_width=True, key="start_skills_timer"):
+                    st.session_state.skills_timer_started_at = datetime.now().isoformat()
+                    st.rerun()
+            with t2:
+                if st.session_state.skills_timer_started_at:
+                    elapsed_skills = int((datetime.now() - datetime.fromisoformat(st.session_state.skills_timer_started_at)).total_seconds())
+                    remaining_skills = max(0, 600 - elapsed_skills)
+                    st.markdown(f"**Time left:** {format_duration(remaining_skills)}")
+                    if remaining_skills == 0:
+                        st.error("Time is up. Grade now or reset for a new timed attempt.")
+                else:
+                    st.markdown("**Timer status:** Not started")
+
         for i, item in enumerate(skills_quiz):
             st.markdown(f"**Q{i+1}. {item['q']}**")
             ans = st.radio(
@@ -1004,17 +2323,464 @@ if view == "View A: Texas CNA Academy":
             )
             if ans:
                 st.session_state.skills_answers[i] = ans
-                if ans == item["answer"]:
-                    st.success(f"Correct. {item['rationale']}")
-                else:
-                    st.error(f"Incorrect. Correct answer: {item['answer']}. {item['rationale']}")
             st.markdown("---")
-        if len(st.session_state.skills_answers) == len(skills_quiz):
+
+        answered_skills = len(st.session_state.skills_answers)
+        st.markdown(f"**Progress:** {answered_skills}/{len(skills_quiz)} answered")
+        st.progress(answered_skills / len(skills_quiz) if skills_quiz else 0)
+
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("Grade Skills Quiz", use_container_width=True, key="grade_skills_quiz"):
+                st.session_state[skills_key] = True
+                st.session_state.skills_quiz_log_done = False
+        with c2:
+            if st.button("Reset Skills Quiz", use_container_width=True, key="reset_skills_quiz"):
+                st.session_state.skills_answers = {}
+                st.session_state[skills_key] = False
+                st.session_state.skills_timer_started_at = None
+                st.session_state.skills_quiz_log_done = False
+                st.rerun()
+
+        if st.session_state[skills_key]:
+            if answered_skills < len(skills_quiz):
+                st.warning("Please answer all skills quiz questions before grading.")
+            else:
+                score = sum(1 for i, q in enumerate(skills_quiz) if st.session_state.skills_answers.get(i) == q["answer"])
+                pct_score = int((score / len(skills_quiz)) * 100)
+
+                elapsed_skills = 0
+                if timed_skills and st.session_state.skills_timer_started_at:
+                    elapsed_skills = int((datetime.now() - datetime.fromisoformat(st.session_state.skills_timer_started_at)).total_seconds())
+
+                if pct_score >= 80:
+                    st.success(f"Skills quiz score: {score}/{len(skills_quiz)} ({pct_score}%). Strong clinical judgment.")
+                else:
+                    st.warning(f"Skills quiz score: {score}/{len(skills_quiz)} ({pct_score}%). Review safety-focused rationales and retry.")
+
+                if timed_skills:
+                    if not st.session_state.skills_timer_started_at:
+                        st.warning("Timed mode was enabled, but timer was not started.")
+                    else:
+                        time_status = "within" if elapsed_skills <= 600 else "over"
+                        st.info(f"Timed attempt duration: {format_duration(elapsed_skills)} ({time_status} the 10-minute target).")
+
+                if not st.session_state.skills_quiz_log_done:
+                    history = st.session_state.quiz_history
+                    history.setdefault("skills", []).append({
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        "score": score,
+                        "total": len(skills_quiz),
+                        "percent": pct_score,
+                        "timed_mode": timed_skills,
+                        "duration": format_duration(elapsed_skills) if timed_skills and st.session_state.skills_timer_started_at else "--:--"
+                    })
+                    st.session_state.quiz_history = history
+                    st.session_state.skills_quiz_log_done = True
+
+                for i, item in enumerate(skills_quiz):
+                    selected = st.session_state.skills_answers.get(i)
+                    if selected == item["answer"]:
+                        st.success(f"Q{i+1}: Correct. {item['rationale']}")
+                    else:
+                        st.error(f"Q{i+1}: Incorrect. Correct answer: {item['answer']}. {item['rationale']}")
+        elif len(st.session_state.skills_answers) == len(skills_quiz):
             score = sum(1 for i, q in enumerate(skills_quiz) if st.session_state.skills_answers.get(i) == q["answer"])
             st.info(f"Skills quiz score: {score}/{len(skills_quiz)}")
+
+        st.markdown("---")
+        render_quiz_history_panel("skills", "Skills Quiz History")
         st.markdown('</div>', unsafe_allow_html=True)
 
     with tab6:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("### Curriculum Modules")
+        st.markdown(
+            '<div class="study-hero"><strong>Course Experience:</strong> Learn by lesson, track progress, and take chapter quizzes in one clean flow.</div>',
+            unsafe_allow_html=True
+        )
+
+        st.markdown('<div class="crumbs">Home / Texas CNA Academy / Curriculum Modules</div>', unsafe_allow_html=True)
+
+        chapters = get_all_chapters()
+        all_titles = [title for title, _ in chapters]
+
+        if not all_titles:
+            st.warning("No lessons are available right now.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.stop()
+
+        if st.session_state.get("selected_chapter") not in all_titles:
+            st.session_state.selected_chapter = all_titles[0]
+
+        first_incomplete = next((title for title, _ in chapters if not st.session_state.chapter_progress.get(title, False)), all_titles[0])
+        continue_target = st.session_state.get("last_selected_chapter") if st.session_state.get("last_selected_chapter") in all_titles else first_incomplete
+
+        cta1, cta2 = st.columns([2, 1])
+        with cta1:
+            target_name = continue_target.split(":", 1)[1].strip()
+            st.markdown(f"**Continue recommendation:** {target_name}")
+            st.caption("Use your last opened lesson or the next incomplete lesson to keep steady momentum.")
+        with cta2:
+            if st.button("Continue Where I Left Off", use_container_width=True, key="continue_lesson_button"):
+                st.session_state.selected_chapter = continue_target
+                st.rerun()
+
+        complete, total = chapter_progress_summary()
+        quiz_done_count = sum(
+            1
+            for title, module_info in chapters
+            if len(st.session_state.chapter_quiz_answers.get(title, {})) == len(module_info.get("quiz", [])) and len(module_info.get("quiz", [])) > 0
+        )
+
+        search_term = st.text_input("Search lessons", placeholder="Try: infection, dementia, safety", key="module_search")
+        filtered_chapters = [
+            (title, module_info)
+            for title, module_info in chapters
+            if search_term.strip().lower() in title.lower() or search_term.strip().lower() in " ".join(module_info.get("key_topics", [])).lower()
+        ] if search_term else chapters
+
+        sequence_mode = st.toggle(
+            "Enable sequence mode (lock future lessons)",
+            key="module_sequence_mode",
+            help="When enabled, learners unlock lessons by mastery (lesson complete + 80% quiz score)."
+        )
+
+        chapter_titles = [title for title, _ in filtered_chapters] if filtered_chapters else [title for title, _ in chapters]
+        if st.session_state.get("selected_chapter") not in chapter_titles:
+            st.session_state.selected_chapter = chapter_titles[0]
+
+        first_incomplete_idx = next(
+            (idx for idx, (title, module_info) in enumerate(chapters) if not chapter_mastered(title, module_info)),
+            len(chapters) - 1
+        )
+
+        if sequence_mode:
+            unlocked_titles = {title for idx, (title, _) in enumerate(chapters) if idx <= first_incomplete_idx}
+            if st.session_state.selected_chapter not in unlocked_titles:
+                st.session_state.selected_chapter = chapters[first_incomplete_idx][0]
+                st.info("Sequence mode redirected you to the next lesson that is not yet mastered.")
+
+        if st.session_state.selected_chapter not in chapter_titles:
+            st.session_state.selected_chapter = chapter_titles[0]
+
+        selected_chapter = st.selectbox("Choose a lesson", chapter_titles, key="selected_chapter")
+        st.session_state.last_selected_chapter = selected_chapter
+        module = get_module(selected_chapter)
+
+        m1, m2, m3 = st.columns(3)
+        with m1:
+            st.markdown(f'<div class="metric-card"><div class="kpi">{complete}/{total}</div><div class="label">Lessons Completed</div></div>', unsafe_allow_html=True)
+        with m2:
+            st.markdown(f'<div class="metric-card"><div class="kpi">{quiz_done_count}</div><div class="label">Quizzes Finished</div></div>', unsafe_allow_html=True)
+        with m3:
+            pct_complete = int((complete / total) * 100) if total else 0
+            st.markdown(f'<div class="metric-card"><div class="kpi">{pct_complete}%</div><div class="label">Course Progress</div></div>', unsafe_allow_html=True)
+
+        st.progress(complete / total if total else 0)
+        st.markdown("---")
+
+        layout_cols = st.columns([1.05, 1.95, 0.9])
+        left_col, right_col = layout_cols[0], layout_cols[1]
+
+        with left_col:
+            st.markdown("#### Lesson Library")
+            source_for_list = filtered_chapters if filtered_chapters else chapters
+            for title, module_info in source_for_list:
+                chapter_title = title.split(":", 1)[1].strip()
+                icon = lesson_icon_from_title(chapter_title)
+                chapter_complete = st.session_state.chapter_progress.get(title, False)
+                chapter_class = "complete" if chapter_complete else "pending"
+                if title == selected_chapter:
+                    chapter_class += " active"
+                list_index = all_titles.index(title)
+                is_unlocked = (not sequence_mode) or (list_index <= first_incomplete_idx)
+                quiz_total = len(module_info.get("quiz", []))
+                quiz_answers = len(st.session_state.chapter_quiz_answers.get(title, {}))
+                quiz_done = quiz_total > 0 and quiz_answers == quiz_total
+                mastery_pct = chapter_quiz_percent(title, module_info)
+                mastered = chapter_mastered(title, module_info)
+                complete_chip = "<span class=\"lesson-chip done\">Complete</span>" if chapter_complete else "<span class=\"lesson-chip todo\">In Progress</span>"
+                quiz_chip = "<span class=\"lesson-chip done\">Quiz Done</span>" if quiz_done else "<span class=\"lesson-chip todo\">Quiz Pending</span>"
+                lock_chip = "<span class=\"lesson-chip done\">Unlocked</span>" if is_unlocked else "<span class=\"lesson-chip todo\">Locked</span>"
+                mastery_chip = "<span class=\"lesson-chip done\">Mastered</span>" if mastered else "<span class=\"lesson-chip todo\">Not Mastered</span>"
+                if quiz_total > 0:
+                    lesson_progress = int(((1 if chapter_complete else 0) * 40) + ((quiz_answers / quiz_total) * 30) + (mastery_pct * 0.3))
+                else:
+                    lesson_progress = 100 if chapter_complete else 0
+
+                st.markdown(
+                    f'''
+                    <div class="lesson-card {chapter_class}">
+                        <div class="lesson-title">{icon} Chapter {module_info['chapter_number']}: {chapter_title}</div>
+                        <div>{complete_chip}{quiz_chip}{mastery_chip}{lock_chip}</div>
+                        <div class="mini-progress-track"><div class="mini-progress-fill" style="width:{lesson_progress}%;"></div></div>
+                        <div class="lesson-meta">Estimated time: {module_info['duration_hours']} hr • Topics: {len(module_info.get("key_topics", []))}</div>
+                    </div>
+                    ''',
+                    unsafe_allow_html=True
+                )
+                if st.button("Open Lesson", key=f"open_lesson_{module_info['chapter_number']}", use_container_width=True, disabled=not is_unlocked):
+                    st.session_state.selected_chapter = title
+                    st.rerun()
+
+        with right_col:
+            if module:
+                chapter_name = selected_chapter.split(":", 1)[1].strip()
+                chapter_icon = lesson_icon_from_title(chapter_name)
+                chapter_image = chapter_thumbnail_from_title(chapter_name)
+                chapter_video = chapter_video_from_module(module["chapter_number"])
+                quiz_total_for_header = len(module.get("quiz", []))
+                quiz_answered_for_header = len(st.session_state.chapter_quiz_answers.get(selected_chapter, {}))
+                if quiz_total_for_header > 0:
+                    lesson_completion_pct = int(((1 if st.session_state.chapter_progress.get(selected_chapter, False) else 0) * 50) + ((quiz_answered_for_header / quiz_total_for_header) * 50))
+                else:
+                    lesson_completion_pct = 100 if st.session_state.chapter_progress.get(selected_chapter, False) else 0
+
+                st.markdown(
+                    f'<div class="sticky-study-header"><div style="font-weight:800; font-size:1.02rem;">Now Studying: {chapter_icon} Chapter {module["chapter_number"]}</div><div style="font-weight:700; margin-top:.15rem;">{chapter_name}</div><div class="small-muted">Study time: {module["duration_hours"]} hour(s) • Quiz questions: {len(module.get("quiz", []))} • Lesson progress: {lesson_completion_pct}%</div></div>',
+                    unsafe_allow_html=True
+                )
+                st.markdown('<div class="chapter-thumbnail">', unsafe_allow_html=True)
+                st.image(chapter_image, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                with st.expander("Watch 60-second lesson intro", expanded=False):
+                    st.video(chapter_video)
+
+                current_index = all_titles.index(selected_chapter)
+                nav1, nav2 = st.columns(2)
+                with nav1:
+                    if st.button("Previous Lesson", use_container_width=True, key=f"prev_lesson_{module['chapter_number']}", disabled=current_index == 0):
+                        st.session_state.selected_chapter = all_titles[current_index - 1]
+                        st.rerun()
+                with nav2:
+                    if st.button("Next Lesson", use_container_width=True, key=f"next_lesson_{module['chapter_number']}", disabled=current_index == len(all_titles) - 1):
+                        st.session_state.selected_chapter = all_titles[current_index + 1]
+                        st.rerun()
+
+                action1, action2 = st.columns([1.2, 1])
+                with action1:
+                    was_complete = st.session_state.chapter_progress.get(selected_chapter, False)
+                    chapter_complete = st.checkbox(
+                        "Mark this lesson complete",
+                        value=st.session_state.chapter_progress.get(selected_chapter, False),
+                        key=f"chapter_complete_{module['chapter_number']}"
+                    )
+                    update_chapter_progress(selected_chapter, chapter_complete)
+                    if chapter_complete and not was_complete:
+                        st.success("Lesson completed. Great momentum!")
+                        st.balloons()
+                with action2:
+                    if st.button("Open Quiz Section", use_container_width=True, key=f"open_quiz_{module['chapter_number']}"):
+                        st.session_state[f"focus_quiz_{module['chapter_number']}"] = True
+
+                lesson_tab1, lesson_tab2, lesson_tab3, lesson_tab4 = st.tabs([
+                    "Overview",
+                    "Lesson Content",
+                    "Chapter Quiz",
+                    "Case Studies & Scripts"
+                ])
+
+                if st.session_state.get(f"focus_quiz_{module['chapter_number']}"):
+                    st.info("Open the 'Chapter Quiz' tab above to take or retake this lesson quiz.")
+                    st.session_state[f"focus_quiz_{module['chapter_number']}"] = False
+
+                with lesson_tab1:
+                    st.markdown("### Key Topics")
+                    st.write("- " + "\n- ".join(module["key_topics"]))
+                    st.markdown("---")
+                    st.markdown("### Suggested Study Flow")
+                    st.write("1. Read the lesson content once for understanding.")
+                    st.write("2. Re-read high-risk safety and reporting topics.")
+                    st.write("3. Complete the chapter quiz and review rationales.")
+                    st.write("4. Use related case studies to apply the chapter concepts.")
+
+                with lesson_tab2:
+                    content = load_markdown_content(module["file"])
+                    st.markdown(content)
+
+                with lesson_tab3:
+                    chapter_quiz = module.get("quiz", [])
+                    chapter_submit_key = f"chapter_quiz_submitted_{module['chapter_number']}"
+                    if chapter_submit_key not in st.session_state:
+                        st.session_state[chapter_submit_key] = False
+
+                    for i, item in enumerate(chapter_quiz):
+                        st.markdown(f"**Q{i+1}. {item['q']}**")
+                        ans = st.radio(
+                            f"Choose answer for chapter question {i+1}",
+                            item["choices"],
+                            key=f"chapter_{module['chapter_number']}_quiz_{i}",
+                            index=None
+                        )
+                        if ans:
+                            if selected_chapter not in st.session_state.chapter_quiz_answers:
+                                st.session_state.chapter_quiz_answers[selected_chapter] = {}
+                            st.session_state.chapter_quiz_answers[selected_chapter][i] = ans
+                        st.markdown("---")
+
+                    chapter_answers = st.session_state.chapter_quiz_answers.get(selected_chapter, {})
+                    answered_chapter = len(chapter_answers)
+
+                    if chapter_quiz:
+                        st.markdown(f"**Progress:** {answered_chapter}/{len(chapter_quiz)} answered")
+                        st.progress(answered_chapter / len(chapter_quiz))
+
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            if st.button("Grade Chapter Quiz", use_container_width=True, key=f"grade_chapter_quiz_{module['chapter_number']}"):
+                                st.session_state[chapter_submit_key] = True
+                        with c2:
+                            if st.button("Reset Chapter Quiz", use_container_width=True, key=f"reset_chapter_quiz_{module['chapter_number']}"):
+                                if selected_chapter in st.session_state.chapter_quiz_answers:
+                                    st.session_state.chapter_quiz_answers[selected_chapter] = {}
+                                st.session_state[chapter_submit_key] = False
+                                st.rerun()
+
+                        if st.session_state[chapter_submit_key]:
+                            if answered_chapter < len(chapter_quiz):
+                                st.warning("Please answer all chapter quiz questions before grading.")
+                            else:
+                                score = sum(
+                                    1
+                                    for i, item in enumerate(chapter_quiz)
+                                    if chapter_answers.get(i) == item["answer"]
+                                )
+                                pct_score = int((score / len(chapter_quiz)) * 100)
+                                if pct_score >= 80:
+                                    st.success(f"Chapter quiz score: {score}/{len(chapter_quiz)} ({pct_score}%). Great chapter mastery.")
+                                else:
+                                    st.warning(f"Chapter quiz score: {score}/{len(chapter_quiz)} ({pct_score}%). Review this chapter and retake.")
+
+                                for i, item in enumerate(chapter_quiz):
+                                    selected = chapter_answers.get(i)
+                                    if selected == item["answer"]:
+                                        st.success(f"Q{i+1}: Correct. {item['rationale']}")
+                                    else:
+                                        st.error(f"Q{i+1}: Incorrect. Correct answer: {item['answer']}. {item['rationale']}")
+
+                with lesson_tab4:
+                    related_cases = [case for case in CASE_STUDIES if case["chapter"] == selected_chapter]
+                    if related_cases:
+                        st.markdown("### Related Case Studies")
+                        for case in related_cases:
+                            with st.expander(case["title"]):
+                                st.write(case["scenario"])
+                                st.write("**Best response:** " + case["answer"])
+                                st.write(case["rationale"])
+                        st.markdown("---")
+
+                    chapter_key = selected_chapter.split(":", 1)[1].strip().lower()
+                    templates = [
+                        template for template in VIDEO_SCRIPT_TEMPLATES
+                        if chapter_key in template.get("chapter", "").lower()
+                        or chapter_key in template.get("objective", "").lower()
+                        or chapter_key in template.get("title", "").lower()
+                    ]
+                    if templates:
+                        st.markdown("### Video Script Templates")
+                        for template in templates:
+                            st.markdown(f"**{template['title']}**")
+                            for line in template.get("script", []):
+                                st.write(f"- {line}")
+                            st.markdown("---")
+
+                st.markdown("### Recommended Next Lessons")
+                rec_slice = all_titles[current_index + 1: current_index + 4]
+                if not rec_slice:
+                    st.success("You are on the final lesson. Great work completing the curriculum path.")
+                else:
+                    rec_cols = st.columns(len(rec_slice))
+                    for idx, rec_title in enumerate(rec_slice):
+                        rec_module = get_module(rec_title)
+                        if not rec_module:
+                            continue
+                        rec_name = rec_title.split(":", 1)[1].strip()
+                        rec_icon = lesson_icon_from_title(rec_name)
+                        rec_mastered = chapter_mastered(rec_title, rec_module)
+                        rec_badge = "Mastered" if rec_mastered else "Continue"
+                        with rec_cols[idx]:
+                            st.markdown('<div class="rec-card">', unsafe_allow_html=True)
+                            st.markdown(f"**{rec_icon} Chapter {rec_module['chapter_number']}**")
+                            st.markdown(rec_name)
+                            st.caption(f"{rec_module['duration_hours']} hr • {rec_badge}")
+                            if st.button("Open", key=f"rec_open_{rec_module['chapter_number']}", use_container_width=True):
+                                st.session_state.selected_chapter = rec_title
+                                st.rerun()
+                            st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.warning("Selected lesson module could not be loaded.")
+
+        with layout_cols[2]:
+            st.markdown('<div class="action-rail">', unsafe_allow_html=True)
+            st.markdown("#### Lesson Actions")
+            if module:
+                mastery_now = chapter_quiz_percent(selected_chapter, module)
+                mastered_now = chapter_mastered(selected_chapter, module)
+                st.caption(f"Mastery: {mastery_now}%")
+                st.caption("Target: 80% to unlock next lesson in sequence mode")
+                if st.button("Take / Retake Quiz", key=f"rail_quiz_{module['chapter_number']}", use_container_width=True):
+                    st.session_state[f"focus_quiz_{module['chapter_number']}"] = True
+                    st.rerun()
+                notes = f"Chapter {module['chapter_number']} Notes\n" + "- " + "\n- ".join(module.get("key_topics", []))
+                st.download_button(
+                    "Download Notes",
+                    data=notes,
+                    file_name=f"chapter_{module['chapter_number']}_notes.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    key=f"rail_notes_{module['chapter_number']}"
+                )
+                if mastered_now:
+                    st.success("Lesson mastered")
+                else:
+                    st.warning("Mastery not reached")
+            else:
+                st.caption("Select a lesson to view actions.")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with tab7:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("### Study Plan")
+        st.markdown('<div class="info-card">Track chapter progress, quiz completion, and identify the next chapters to review.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="info-card">Mark chapters complete as you finish them, then follow the suggested next chapters to stay on pace for Texas CNA exam readiness.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="info-card">Tip: start with the highlighted exam-critical chapters first, then use the table to confirm coverage of all 18 topics.</div>', unsafe_allow_html=True)
+
+        chapters = get_all_chapters()
+        chapter_rows = []
+        next_chapters = []
+        for title, module_info in chapters:
+            completed = st.session_state.chapter_progress.get(title, False)
+            quiz_complete = len(st.session_state.chapter_quiz_answers.get(title, {})) == len(module_info.get("quiz", []))
+            chapter_rows.append({
+                "Chapter": f"{module_info['chapter_number']}: {title.split(':', 1)[1].strip()}",
+                "Completed": "Yes" if completed else "No",
+                "Quiz Done": "Yes" if quiz_complete else "No"
+            })
+            if not completed and len(next_chapters) < 3:
+                next_chapters.append(f"{module_info['chapter_number']}: {title.split(':', 1)[1].strip()}")
+
+        completed, total = chapter_progress_summary()
+        st.markdown(f"**Overall chapter progress:** {completed} of {total} complete")
+        st.progress(completed / total if total else 0)
+        st.markdown("---")
+
+        st.markdown("### Next Chapters to Review")
+        if next_chapters:
+            for chapter in next_chapters:
+                st.write(f"- {chapter}")
+        else:
+            st.success("All chapters are marked complete — excellent study discipline.")
+
+        st.markdown("---")
+        st.markdown("### Chapter Progress Tracker")
+        st.table(chapter_rows)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with tab8:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("### Exam Tips")
         st.write("- Practice speaking each skill step out loud.")
@@ -1025,7 +2791,7 @@ if view == "View A: Texas CNA Academy":
         st.write("- Watch for changes in condition and know what should be reported.")
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with tab7:
+    with tab9:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("### Texas CNA Success")
         st.write("- Build a routine: flashcards, one study track, and one quiz set each session.")
@@ -1035,126 +2801,826 @@ if view == "View A: Texas CNA Academy":
         st.write("- Use the Renewal Hub after certification so you stay active in Texas.")
         st.markdown('</div>', unsafe_allow_html=True)
 
+    with tab10:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("### Prometric Nurse Aide Certification Sample Test")
+        st.caption("50-question sample test based on the Prometric Texas Nurse Aide Candidate Information Bulletin sample exam.")
+        st.caption(f"Verified skills-source alignment: {PROMETRIC_VERIFIED_ALIGNMENT_LABEL}")
+
+        sample_key = "prometric_sample_test_submitted"
+        if sample_key not in st.session_state:
+            st.session_state[sample_key] = False
+        if "prometric_sample_answers" not in st.session_state:
+            st.session_state.prometric_sample_answers = {}
+
+        for i, item in enumerate(prometric_sample_test):
+            st.markdown(f"**Q{i+1}. {item['q']}**")
+            ans = st.radio(
+                f"Choose answer for Prometric sample question {i+1}",
+                item["choices"],
+                key=f"prometric_sample_{i}",
+                index=None
+            )
+            if ans:
+                st.session_state.prometric_sample_answers[i] = ans
+            st.markdown("---")
+
+        answered_sample = len(st.session_state.prometric_sample_answers)
+        st.markdown(f"**Progress:** {answered_sample}/{len(prometric_sample_test)} answered")
+        st.progress(answered_sample / len(prometric_sample_test) if prometric_sample_test else 0)
+
+        s1, s2 = st.columns(2)
+        with s1:
+            if st.button("Grade Sample Test", use_container_width=True, key="grade_prometric_sample_test"):
+                st.session_state[sample_key] = True
+        with s2:
+            if st.button("Reset Sample Test", use_container_width=True, key="reset_prometric_sample_test"):
+                st.session_state.prometric_sample_answers = {}
+                st.session_state[sample_key] = False
+                st.rerun()
+
+        if st.session_state[sample_key]:
+            if answered_sample < len(prometric_sample_test):
+                st.warning("Please answer all sample test questions before grading.")
+            else:
+                sample_score = sum(
+                    1 for i, item in enumerate(prometric_sample_test)
+                    if st.session_state.prometric_sample_answers.get(i) == item["answer"]
+                )
+                sample_pct = int((sample_score / len(prometric_sample_test)) * 100)
+                if sample_pct >= 80:
+                    st.success(f"Sample test score: {sample_score}/{len(prometric_sample_test)} ({sample_pct}%).")
+                else:
+                    st.warning(f"Sample test score: {sample_score}/{len(prometric_sample_test)} ({sample_pct}%). Review the missed items and retry.")
+
+                for i, item in enumerate(prometric_sample_test):
+                    selected = st.session_state.prometric_sample_answers.get(i)
+                    if selected == item["answer"]:
+                        st.success(f"Q{i+1}: Correct.")
+                    else:
+                        st.error(f"Q{i+1}: Incorrect. Correct answer: {item['answer']}")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# =========================================================
+# VIEW B
 # =========================================================
 # VIEW B
 # =========================================================
 elif view == "View B: CNA CEUs & TULIP-Link":
-    st.subheader("CNA CEUs & TULIP-Link")
+    st.subheader("🏥 CNA CEUs & TULIP-Link: Texas Renewal Center")
     st.markdown(
-        '<div class="info-card">Review CNA renewal readiness, missing CEU requirements, and TULIP timing. Use the dashboard to prioritize the next steps before the 90-day window.</div>',
+        '<div class="info-card">Complete step-by-step guidance for CNA renewal, required CEU courses, and Texas TULIP submission. Choose your path below.</div>',
         unsafe_allow_html=True
     )
+    render_view_visuals("b")
 
-    active_options = cna_df[cna_df["user_type"] != "Student"].copy()
-    active_options["display"] = active_options["first_name"] + " " + active_options["last_name"] + " • " + active_options["license_number"]
-    selected_name = st.selectbox("Select CNA profile", active_options["display"].tolist())
-    selected = active_options[active_options["display"] == selected_name].iloc[0]
-
-    summary = compliance_snapshot(selected["cna_id"], selected["expiration_date"], ceu_df)
-    score = readiness_score(summary)
-    missing = missing_items(summary)
-    records = ceu_df[ceu_df["cna_id"] == selected["cna_id"]]
-
-    m1, m2, m3, m4 = st.columns(4)
-    with m1:
-        st.markdown(f'<div class="metric-card"><div class="kpi">{score}%</div><div class="label">Renewal Readiness</div></div>', unsafe_allow_html=True)
-    with m2:
-        st.markdown(f'<div class="metric-card"><div class="kpi">{summary["hours"]}/24</div><div class="label">In-Service Hours</div></div>', unsafe_allow_html=True)
-    with m3:
-        status = "OPEN" if summary["tulip_days"] <= 0 else "NOT OPEN"
-        st.markdown(f'<div class="metric-card"><div class="kpi">{status}</div><div class="label">TULIP Window</div></div>', unsafe_allow_html=True)
-    with m4:
-        st.markdown(f'<div class="metric-card"><div class="kpi">{summary["days_left"]}</div><div class="label">Days Until Expiration</div></div>', unsafe_allow_html=True)
-
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "Dashboard",
-        "Stay Active in Texas",
-        "Missing Items",
-        "TULIP Coach",
-        "CEU Records",
-        "Common Delays"
-    ])
-
-    with tab1:
+    def render_professional_growth(pathway):
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### Personal Compliance Dashboard")
-        st.write(f"**CNA:** {selected['first_name']} {selected['last_name']}")
-        st.write(f"**License Number:** {selected['license_number']}")
-        st.write(f"**Last Renewal Date:** {selected['last_renewal_date']}")
-        st.write(f"**Expiration Date:** {selected['expiration_date']}")
-        st.progress(score / 100)
-        st.write(f"Renewal readiness score: **{score}%**")
+        st.markdown(f"### 🌟 Professional Growth ({pathway} Path)")
+        st.markdown("Use this section to build confidence, improve workplace performance, and plan your next career step.")
 
-        x1, x2, x3 = st.columns(3)
-        with x1:
-            st.success("Geriatrics recorded") if summary["geriatric"] else st.error("Geriatrics not recorded")
-        with x2:
-            st.success("Dementia / Alzheimer's recorded") if summary["dementia"] else st.error("Dementia / Alzheimer's not recorded")
-        with x3:
-            st.success("Annual infection-control training recorded") if summary["infection"] else st.error("Annual infection-control training not recorded")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("#### Next 30 Days")
+            st.write("- Finish your required CEU plan and organize certificates in one folder.")
+            st.write("- Practice concise shift reports using SBAR-style communication.")
+            st.write("- Choose one high-impact topic to strengthen each week (safety, dementia care, documentation).")
+            st.write("- Ask a charge nurse or mentor for one weekly feedback point to improve.")
+        with c2:
+            st.markdown("#### Career Toolkit")
+            st.write("- Keep a one-page resume updated with current CEUs and care specialties.")
+            st.write("- Prepare interview stories showing resident advocacy, teamwork, and reliability.")
+            st.write("- Track measurable wins (attendance, quality notes, resident compliments).")
+            st.write("- Build a realistic self-care plan to support consistency and avoid burnout.")
 
-        if summary["tulip_days"] > 0:
-            st.info(f"Your TULIP action window opens in **{summary['tulip_days']} days**.")
-        elif summary["tulip_days"] == 0:
-            st.success("Your TULIP action window opens **today**.")
+        st.divider()
+        st.markdown("#### Professional Standards and Best Practices")
+        for section, items in PROFESSIONAL_RECOMMENDATIONS.items():
+            with st.expander(f"**{section}**"):
+                for item in items:
+                    st.write(f"- {item}")
+
+        st.info(
+            "Professional tip: Pair compliance progress (CEUs + TULIP) with one career-development goal each month so your license stays active and your opportunities keep growing."
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    def render_monthly_ceu_reminder():
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown(f"### 🗓️ {TODAY.strftime('%B %Y')} Monthly CEU Encouragement Reminder")
+        st.markdown("Stay current every month by checking your CEU progress and renewal timeline below.")
+
+        reminder_options = cna_df[cna_df["user_type"] != "Student"].copy()
+        if reminder_options.empty:
+            st.info("No CNA profiles are available for monthly reminders.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            return
+
+        reminder_options["display"] = (
+            reminder_options["first_name"] + " " + reminder_options["last_name"] + " • " + reminder_options["license_number"]
+        )
+        selected_name = st.selectbox(
+            "Choose CNA for monthly reminder",
+            reminder_options["display"].tolist(),
+            key="monthly_reminder_cna_select"
+        )
+        selected = reminder_options[reminder_options["display"] == selected_name].iloc[0]
+
+        summary = compliance_snapshot(selected["cna_id"], selected["expiration_date"], ceu_df)
+        days_left = summary["days_left"]
+        remaining_hours = max(0, 24 - summary["hours"])
+        months_left = max(1, (max(days_left, 1) + 29) // 30)
+        monthly_target_hours = 0 if remaining_hours == 0 else max(1, (remaining_hours + months_left - 1) // months_left)
+
+        m1, m2, m3 = st.columns(3)
+        with m1:
+            st.markdown(f'<div class="metric-card"><div class="kpi">{summary["hours"]}/24</div><div class="label">CEU Hours Logged</div></div>', unsafe_allow_html=True)
+        with m2:
+            st.markdown(f'<div class="metric-card"><div class="kpi">{remaining_hours}</div><div class="label">Hours Remaining</div></div>', unsafe_allow_html=True)
+        with m3:
+            st.markdown(f'<div class="metric-card"><div class="kpi">{days_left}</div><div class="label">Days Until Expiration</div></div>', unsafe_allow_html=True)
+
+        if days_left > 60:
+            st.markdown(
+                '<div class="soft-card" style="background:#dcfce7; border-left:4px solid #166534;"><strong>🎆🎇 Firecracker Celebration: You are staying current!</strong><br>Keep your momentum this month. Complete at least <strong>'
+                + str(monthly_target_hours)
+                + ' CEU hour(s)</strong> and keep all certificates organized for TULIP.</div>',
+                unsafe_allow_html=True
+            )
+            st.success("Encouragement reminder: Great job staying ahead. Small monthly CEU wins protect your license and open more opportunities.")
+        elif days_left > 30:
+            st.markdown(
+                '<div class="soft-card" style="background:#fffbeb; border-left:4px solid #b45309;"><strong>🚩 Yellow Flag Warning:</strong> You are within 60 days of renewal. Start or finish CEUs now so your TULIP submission is smooth.</div>',
+                unsafe_allow_html=True
+            )
+            st.warning(f"Monthly reminder: Focus on at least {monthly_target_hours} CEU hour(s) this month and prepare your documents now.")
+        elif days_left >= 0:
+            st.markdown(
+                '<div class="soft-card" style="background:#fee2e2; border-left:4px solid #b91c1c;"><strong>🚩 Red Flag Alert:</strong> Your license is within 30 days of expiration. Finish CEUs immediately and submit through TULIP as soon as possible.</div>',
+                unsafe_allow_html=True
+            )
+            st.error("Urgent monthly reminder: Complete any remaining CEUs and submit renewal now to avoid expiration.")
         else:
-            st.warning(f"Your TULIP action window opened **{abs(summary['tulip_days'])} days ago**.")
+            st.markdown(
+                '<div class="soft-card" style="background:#fee2e2; border-left:4px solid #7f1d1d;"><strong>🚩 License Expired:</strong> Start reactivation steps immediately and contact Texas HHSC before TULIP submission.</div>',
+                unsafe_allow_html=True
+            )
+            st.error("Critical reminder: Your license is expired. Use the Reactivation tabs now and contact HHSC for pathway confirmation.")
+
+        st.info(
+            f"This month\'s CEU target: **{monthly_target_hours} hour(s)**. Keep your course certificates in one folder and review your status at least once every month."
+        )
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with tab2:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### Stay Active in Texas")
-        for item in renewal_rules:
-            st.write(f"- {item}")
-        st.markdown('<div class="info-card">Use this section as a plain-language checklist for staying active and avoiding avoidable renewal delays.</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    # License Status Selection
+    st.markdown("### Your License Status")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("✓ Active License", use_container_width=True, key="status_active"):
+            st.session_state.license_status = "Active"
+            st.rerun()
+    with col2:
+        if st.button("⚠ Expired License", use_container_width=True, key="status_expired"):
+            st.session_state.license_status = "Expired"
+            st.rerun()
 
-    with tab3:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### Missing Items Before Submission")
-        for item in missing:
-            st.write(f"- {item}")
-        st.markdown('</div>', unsafe_allow_html=True)
+    # Color-coded indicator
+    if st.session_state.license_status == "Active":
+        st.markdown('<div class="soft-card" style="background: #dcfce7; border-left: 4px solid #166534;"><strong>✓ Active License Path</strong><br>Track your renewal timeline and complete CEUs before your TULIP window opens.</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="soft-card" style="background: #fee2e2; border-left: 4px solid #b91c1c;"><strong>⚠ Expired License Path</strong><br>Reactivate your license with an updated CEU plan and TULIP resubmission.</div>', unsafe_allow_html=True)
 
-    with tab4:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### TULIP Coach")
-        for i, step in enumerate(tulip_coach_steps, start=1):
-            st.write(f"{i}. {step}")
-        st.markdown('</div>', unsafe_allow_html=True)
+    render_monthly_ceu_reminder()
 
-    with tab5:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### CEU Records")
-        if records.empty:
-            st.warning("No CEU records found.")
-        else:
-            display = records.rename(columns={
-                "course_title": "Course Title",
-                "hours": "Hours",
-                "geriatric_flag": "Geriatric",
-                "dementia_flag": "Dementia/Alzheimer's",
-                "infection_flag": "Infection Control"
-            })[["Course Title", "Hours", "Geriatric", "Dementia/Alzheimer's", "Infection Control"]]
-            st.dataframe(display, use_container_width=True, hide_index=True)
+    st.markdown("---")
 
-        st.markdown("### Sponsored Texas CEU Placeholder")
-        s1, s2, s3 = st.columns(3)
-        with s1:
-            st.markdown('<div class="soft-card"><strong>Geriatric Care Update</strong><br><span class="small-muted">8 hours • Sponsored Texas CEU placement</span></div>', unsafe_allow_html=True)
-        with s2:
-            st.markdown('<div class="soft-card"><strong>Dementia & Alzheimer’s Care</strong><br><span class="small-muted">8 hours • Sponsored Texas CEU placement</span></div>', unsafe_allow_html=True)
-        with s3:
-            st.markdown('<div class="soft-card"><strong>Infection Control Refresher</strong><br><span class="small-muted">Annual training placement area</span></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    # Show appropriate tabs based on license status
+    if st.session_state.license_status == "Active":
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+            "📋 Start Here: Your Renewal Timeline",
+            "📚 Browse & Complete CEU Courses",
+            "✅ Step-by-Step Renewal Guide",
+            "📋 Renewal Checklist",
+            "🔗 TULIP Info & Official Links",
+            "❓ FAQs & Common Questions",
+            "🌟 Professional Growth",
+            "📊 Legacy Dashboard (Profiles)"
+        ])
 
-    with tab6:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### Common Delay Mistakes")
-        for item in common_delay_mistakes:
-            st.write(f"- {item}")
-        st.markdown('</div>', unsafe_allow_html=True)
+        with tab1:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### Your Renewal Timeline at a Glance")
+            st.markdown("""
+**Texas requires:**
+- **24 hours** of in-service education every 24 months
+- **Required courses:** 4 hrs infection control + 4 hrs geriatrics + 4 hrs dementia = 12 hours minimum
+- **Flexible courses:** 12 additional hours on any approved topic
 
+**Key Dates:**
+- Your license expires on your expiration date
+- **90 days before expiration = TULIP window opens**
+- You can ONLY renew through TULIP once the window opens
+- Renewal after expiration requires reinstatement procedures (more complex)
+            """)
+            
+            st.markdown("### Quick Start Questions")
+            q1 = st.checkbox("When does my TULIP renewal window open?")
+            if q1:
+                st.info("**TULIP opens exactly 90 days before your license expires.**\n\nExample: If your license expires June 15, TULIP opens March 17.")
+            
+            q2 = st.checkbox("How many hours do I need?")
+            if q2:
+                st.success("**24 hours total** over your 24-month license period.\n\n- 4 hours: Infection Control (required, annual)\n- 4 hours: Geriatric Care (required)\n- 4 hours: Dementia/Alzheimer's (required)\n- 12 hours: Any approved courses")
+            
+            q3 = st.checkbox("What if I wait until after my license expires?")
+            if q3:
+                st.warning("**After expiration, you cannot work as a CNA.**\n\nReactivation requires a Reinstatement application (more steps, potential delays). Renew **before** your license expires!")
+            
+            q4 = st.checkbox("Can I do these courses now, before TULIP opens?")
+            if q4:
+                st.success("**Yes!** Complete your 24 hours anytime. When TULIP opens, you'll upload your certificates for renewal.")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tab2:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### Texas DHS Approved CEU Courses")
+            st.markdown("Select courses and track your progress. All courses below meet Texas Department of Health Services requirements.")
+            
+            # Filter by category
+            categories = sorted(set(course["category"] for course in CEU_COURSE_LIBRARY))
+            selected_category = st.selectbox("Filter by category", ["All Categories"] + categories, key="ceu_category_filter")
+            
+            # Display courses
+            if selected_category == "All Categories":
+                display_courses = CEU_COURSE_LIBRARY
+            else:
+                display_courses = [c for c in CEU_COURSE_LIBRARY if c["category"] == selected_category]
+            
+            total_hours = sum(c["hours"] for c in display_courses)
+            required_count = sum(1 for c in display_courses if c["required"])
+            
+            st.markdown(f"**Displaying {len(display_courses)} courses** • {total_hours} total hours • {required_count} required")
+            
+            st.markdown("---")
+            
+            for i, course in enumerate(display_courses):
+                col1, col2, col3 = st.columns([0.08, 0.72, 0.20])
+                
+                with col1:
+                    selected = st.checkbox("", value=course["id"] in st.session_state.selected_ceus, key=f"course_{course['id']}")
+                    if selected:
+                        if course["id"] not in st.session_state.selected_ceus:
+                            st.session_state.selected_ceus.append(course["id"])
+                    else:
+                        if course["id"] in st.session_state.selected_ceus:
+                            st.session_state.selected_ceus.remove(course["id"])
+                
+                with col2:
+                    badge_color = "🔴 REQUIRED" if course["required"] else "🟢 OPTIONAL"
+                    st.markdown(f"""
+**{course['title']}**  
+{badge_color} • {course['hours']} hours • {course['category']}  
+*{course['description']}*  
+📍 {course['provider']} • 💰 {course['cost']} • 📱 {course['format']}
+                    """)
+                
+                with col3:
+                    if st.button("Details ℹ", key=f"details_{course['id']}", use_container_width=True):
+                        st.session_state[f"show_details_{course['id']}"] = not st.session_state.get(f"show_details_{course['id']}", False)
+                
+                if st.session_state.get(f"show_details_{course['id']}", False):
+                    with st.expander("Course Details", expanded=True):
+                        st.markdown("**Highlights:**")
+                        for highlight in course["highlights"]:
+                            st.write(f"- {highlight}")
+                        st.divider()
+                        st.markdown(f"**Provider:** {course['provider']}")
+                        st.markdown(f"**Cost Range:** {course['cost']}")
+                        st.markdown(f"**Format:** {course['format']}")
+                
+                st.divider()
+            
+            # Selection summary
+            if st.session_state.selected_ceus:
+                selected_courses = [c for c in CEU_COURSE_LIBRARY if c["id"] in st.session_state.selected_ceus]
+                total_selected_hours = sum(c["hours"] for c in selected_courses)
+                st.markdown(f"### Your Selection: {len(selected_courses)} courses • {total_selected_hours} hours")
+                
+                for course in selected_courses:
+                    st.markdown(f"- **{course['title']}** — {course['hours']} hrs ({course['category']})")
+                
+                if total_selected_hours >= 24:
+                    st.success(f"✓ You've selected {total_selected_hours} hours — meets the 24-hour requirement!")
+                else:
+                    st.warning(f"You've selected {total_selected_hours} hours. You need 24 hours total.")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tab3:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### Step-by-Step: Active License Renewal Path")
+            st.markdown("Follow these steps in order to successfully renew your Texas CNA license.")
+            
+            for step_info in ACTIVE_LICENSE_RENEWAL_STEPS:
+                with st.expander(f"**Step {step_info['step']}: {step_info['title']}**", expanded=step_info['step'] == 1):
+                    st.markdown(f"**Description:**\n{step_info['description']}")
+                    st.markdown(f"**What to do:**\n{step_info['action']}")
+                    st.markdown("**Checklist:**")
+                    for item in step_info["checklist"]:
+                        st.checkbox(item, key=f"active_step_{step_info['step']}_item_{item}")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tab4:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### Interactive Renewal Checklist")
+            st.markdown("Track your progress through the renewal process. Check off items as you complete them.")
+            
+            checklist_items = RENEWAL_READINESS_CHECKLIST["active_cna"]
+            completed_count = 0
+            
+            for i, item_data in enumerate(checklist_items):
+                completed = st.checkbox(item_data["item"], key=f"active_checklist_{i}")
+                if completed:
+                    completed_count += 1
+                st.session_state.renewal_checklist_items[f"active_{i}"] = completed
+            
+            progress_pct = (completed_count / len(checklist_items)) * 100
+            st.markdown(f"### Progress: {completed_count}/{len(checklist_items)} items complete")
+            st.progress(progress_pct / 100)
+            st.markdown(f"**{progress_pct:.0f}% Complete**")
+            
+            if completed_count == len(checklist_items):
+                st.success("🎉 All items checked! You're ready to submit your renewal through TULIP.")
+            
+            # Print-friendly version
+            if st.button("📄 Generate Printable Checklist"):
+                checklist_text = "TEXAS CNA RENEWAL CHECKLIST - ACTIVE LICENSE\n" + "="*50 + "\n\n"
+                for i, item_data in enumerate(checklist_items, 1):
+                    status = "☑" if st.session_state.renewal_checklist_items.get(f"active_{i-1}", False) else "☐"
+                    checklist_text += f"{status} {item_data['item']}\n"
+                st.download_button(
+                    "Download Checklist",
+                    checklist_text,
+                    "cna_renewal_checklist.txt",
+                    "text/plain"
+                )
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tab5:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### TULIP: Texas Uniform License and Permit System")
+            st.markdown(f"**Official Portal:** [TULIP.texas.gov](https://www.tulip.texas.gov)")
+            
+            st.markdown("### What You Need for TULIP Renewal")
+            st.markdown("""
+✓ **Personal Information:**
+- Your Texas CNA Certificate Number
+- Social Security Number (for identity verification)
+- Current contact information (address, phone, email)
+
+✓ **Proof of 24-Hour In-Service Education:**
+- CEU certificates from all courses
+- Provider information
+- Dates completed
+
+✓ **Required Topics Documentation:**
+- Infection Control training certificate (4+ hours)
+- Geriatric Care certificate (4+ hours)
+- Dementia/Alzheimer's Care certificate (4+ hours)
+
+✓ **Employer Verification (if requested):**
+- Form 5506-NAR (May be required by your facility)
+- Employer/facility contact information
+
+✓ **Renewal Fee:**
+- Current fee: $75-$100 (verify in TULIP)
+- Payment method: Credit/debit card through TULIP portal
+            """)
+            
+            st.divider()
+            
+            st.markdown("### Texas HHSC Support Resources")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**Official Websites:**")
+                st.markdown("[🔗 Texas HHSC CNA Registry](https://hhs.texas.gov/nurses-aids)")
+                st.markdown("[🔗 TULIP System](https://www.tulip.texas.gov)")
+                st.markdown("[🔗 TULIP Support Portal](https://www.tulip.texas.gov/support)")
+            
+            with col2:
+                st.markdown("**Contact Information:**")
+                st.markdown("📞 **Phone:** 512-438-1234")
+                st.markdown("📧 **Email:** contactcna@dshs.texas.gov")
+                st.markdown("💬 **Chat:** Available through TULIP portal")
+            
+            st.markdown("---")
+            
+            st.markdown("### TULIP Timeline for Your Renewal")
+            
+            renewal_timeline = f"""
+1. **Now**: Complete your 24-hour CEU requirement
+2. **90 Days Before Expiration**: TULIP renewal window opens (automatic email notification)
+3. **TULIP Opens - First Day**: Log in immediately, verify your information
+4. **Within 2 Weeks**: Upload all CEU certificates and documentation
+5. **Within 3 Weeks**: Confirm required topics and submit application
+6. **5-10 Business Days**: Processing (TULIP will update your status)
+7. **Upon Approval**: Receive new license by mail + digital certificate in TULIP
+8. **Before Expiration Date**: Download/print your new license for your records
+            """
+            st.info(renewal_timeline)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tab6:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### Frequently Asked Questions")
+            
+            faq_items = [
+                ("Can I renew my license early?", "No. TULIP only opens 90 days before your license expires. You cannot renew before that window."),
+                ("What if I don't complete 24 hours before the TULIP window opens?", "You can still renew if you complete them by the TULIP deadline. TULIP will show you the status of your application as you add documents."),
+                ("Can I renew after my license expires?", "Not through the standard renewal process. After expiration, you must file a Reinstatement application, which takes longer and has additional requirements."),
+                ("What if TULIP is down on the deadline day?", "Contact Texas HHSC immediately. You may be granted a brief extension if there are system issues. Document the problem."),
+                ("Do I need to be employed to renew?", "No. You can renew as long as your documentation is complete. Your employment status is separate from renewal."),
+                ("If I'm employed at a facility, do they file the renewal?", "No. You file the renewal through TULIP. Your employer may provide Form 5506-NAR verification if required."),
+                ("What if my CEU was from out of state?", "Texas generally requires courses from Texas-approved providers. Check with HHSC to verify if your course qualifies."),
+                ("How long does processing take?", "Usually 5-10 business days. You'll receive email updates in TULIP."),
+                ("Can I download my license before it's mailed?", "Yes! Your digital certificate is available in TULIP immediately upon approval."),
+                ("What's the renewal fee?", "Current fee is $75-$100. The exact amount will display in TULIP when you submit."),
+            ]
+            
+            for question, answer in faq_items:
+                with st.expander(f"**Q: {question}**"):
+                    st.markdown(f"{answer}")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tab7:
+            render_professional_growth("Active License")
+
+        with tab8:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### Profile-Based Renewal Dashboard (Legacy View)")
+            st.markdown("This view shows individual CNA profiles with renewal status if you prefer the traditional profile-based interface.")
+            
+            active_options = cna_df[cna_df["user_type"] != "Student"].copy()
+            if not active_options.empty:
+                active_options["display"] = active_options["first_name"] + " " + active_options["last_name"] + " • " + active_options["license_number"]
+                selected_name = st.selectbox("Select CNA profile", active_options["display"].tolist(), key="active_profile_select")
+                selected = active_options[active_options["display"] == selected_name].iloc[0]
+
+                summary = compliance_snapshot(selected["cna_id"], selected["expiration_date"], ceu_df)
+                score = readiness_score(summary)
+                records = ceu_df[ceu_df["cna_id"] == selected["cna_id"]]
+
+                m1, m2, m3, m4 = st.columns(4)
+                with m1:
+                    st.markdown(f'<div class="metric-card"><div class="kpi">{score}%</div><div class="label">Renewal Readiness</div></div>', unsafe_allow_html=True)
+                with m2:
+                    st.markdown(f'<div class="metric-card"><div class="kpi">{summary["hours"]}/24</div><div class="label">In-Service Hours</div></div>', unsafe_allow_html=True)
+                with m3:
+                    status = "OPEN" if summary["tulip_days"] <= 0 else "NOT OPEN"
+                    st.markdown(f'<div class="metric-card"><div class="kpi">{status}</div><div class="label">TULIP Window</div></div>', unsafe_allow_html=True)
+                with m4:
+                    st.markdown(f'<div class="metric-card"><div class="kpi">{summary["days_left"]}</div><div class="label">Days Until Expiration</div></div>', unsafe_allow_html=True)
+
+                st.markdown("---")
+                
+                st.markdown("### Personal Compliance Details")
+                st.write(f"**CNA:** {selected['first_name']} {selected['last_name']}")
+                st.write(f"**License Number:** {selected['license_number']}")
+                st.write(f"**Expiration Date:** {selected['expiration_date']}")
+                st.progress(score / 100)
+
+                x1, x2, x3 = st.columns(3)
+                with x1:
+                    st.success("✓ Geriatrics recorded") if summary["geriatric"] else st.error("✗ Geriatrics not recorded")
+                with x2:
+                    st.success("✓ Dementia recorded") if summary["dementia"] else st.error("✗ Dementia not recorded")
+                with x3:
+                    st.success("✓ Infection control recorded") if summary["infection"] else st.error("✗ Infection control not recorded")
+
+                st.markdown("---")
+
+                st.markdown("### CEU Records on File")
+                if records.empty:
+                    st.info("No CEU records found for this profile.")
+                else:
+                    display = records.rename(columns={
+                        "course_title": "Course Title",
+                        "hours": "Hours",
+                        "geriatric_flag": "Geriatric",
+                        "dementia_flag": "Dementia",
+                        "infection_flag": "Infection Control"
+                    })[["Course Title", "Hours", "Geriatric", "Dementia", "Infection Control"]]
+                    st.dataframe(display, use_container_width=True, hide_index=True)
+            else:
+                st.info("No active CNA profiles available.")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    else:  # EXPIRED LICENSE PATH
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+            "📋 Start Here: Reactivation Timeline",
+            "📚 Browse & Complete CEU Courses",
+            "✅ Step-by-Step Reactivation Guide",
+            "📋 Reactivation Checklist",
+            "🔗 TULIP Info & Official Links",
+            "❓ FAQs & Common Questions",
+            "🌟 Professional Growth",
+            "📊 Legacy Dashboard (Profiles)"
+        ])
+
+        with tab1:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### Reactivating Your Expired Texas CNA License")
+            st.markdown("Don't worry! You can reactivate your license, but it requires updated CEU documentation and resubmission through TULIP.")
+            
+            st.markdown("""
+**Important Notes:**
+- You **cannot work as a CNA** until your license is reactivated
+- Your employer needs to know your current status
+- Reactivation is similar to renewal but requires additional verification
+- The reactivation process may take longer than standard renewal
+            """)
+            
+            st.info("""
+**Quick Decision:**
+- **If expired < 2 years:** Use standard renewal pathway (slightly easier)
+- **If expired > 2 years:** May require reinstatement pathway (more steps)
+
+**First step:** Contact Texas HHSC to confirm which pathway you need.
+            """)
+            
+            st.markdown("### Key Requirements for Reactivation")
+            st.markdown("""
+✓ **Current CEU Documentation (24 hours)**
+- 4 hours: Infection Prevention & Control (current/annual)
+- 4 hours: Geriatric Care
+- 4 hours: Dementia/Alzheimer's Care
+- 12 hours: Additional approved courses
+
+✓ **Proof of Current Training**
+- Original CEU certificates with dates
+- Provider information
+- Course verification
+
+✓ **Employer Verification (if employed)**
+- Proof that you work (or want to work) as a CNA
+- Form 5506-NAR if required
+
+✓ **Updated Personal Information**
+- Current address
+- Current phone/email
+- Confirmation you're ready to work as CNA
+            """)
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown("### 📞 Step 1")
+                st.markdown("**Contact Texas HHSC**\n\nCall or email to confirm your reactivation pathway")
+            with col2:
+                st.markdown("### 📚 Step 2")
+                st.markdown("**Complete CEU Courses**\n\nFinish your 24 hours of required training")
+            with col3:
+                st.markdown("### 📤 Step 3")
+                st.markdown("**Submit Through TULIP**\n\nReactivate online with your new documentation")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tab2:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### Texas DHS Approved CEU Courses for Reactivation")
+            st.markdown("You must complete current training (within the last 2 years ideally) to reactivate your license.")
+            
+            # Filter by category
+            categories = sorted(set(course["category"] for course in CEU_COURSE_LIBRARY))
+            selected_category = st.selectbox("Filter by category", ["All Categories"] + categories, key="expired_ceu_category_filter")
+            
+            # Display courses
+            if selected_category == "All Categories":
+                display_courses = CEU_COURSE_LIBRARY
+            else:
+                display_courses = [c for c in CEU_COURSE_LIBRARY if c["category"] == selected_category]
+            
+            total_hours = sum(c["hours"] for c in display_courses)
+            required_count = sum(1 for c in display_courses if c["required"])
+            
+            st.markdown(f"**Displaying {len(display_courses)} courses** • {total_hours} total hours • {required_count} required")
+            
+            st.markdown("---")
+            
+            for i, course in enumerate(display_courses):
+                col1, col2, col3 = st.columns([0.08, 0.72, 0.20])
+                
+                with col1:
+                    selected = st.checkbox("", value=course["id"] in st.session_state.selected_ceus, key=f"expired_course_{course['id']}")
+                    if selected:
+                        if course["id"] not in st.session_state.selected_ceus:
+                            st.session_state.selected_ceus.append(course["id"])
+                    else:
+                        if course["id"] in st.session_state.selected_ceus:
+                            st.session_state.selected_ceus.remove(course["id"])
+                
+                with col2:
+                    badge_color = "🔴 REQUIRED" if course["required"] else "🟢 OPTIONAL"
+                    st.markdown(f"""
+**{course['title']}**  
+{badge_color} • {course['hours']} hours • {course['category']}  
+*{course['description']}*  
+📍 {course['provider']} • 💰 {course['cost']} • 📱 {course['format']}
+                    """)
+                
+                with col3:
+                    if st.button("Details ℹ", key=f"expired_details_{course['id']}", use_container_width=True):
+                        st.session_state[f"expired_show_details_{course['id']}"] = not st.session_state.get(f"expired_show_details_{course['id']}", False)
+                
+                if st.session_state.get(f"expired_show_details_{course['id']}", False):
+                    with st.expander("Course Details", expanded=True):
+                        st.markdown("**Highlights:**")
+                        for highlight in course["highlights"]:
+                            st.write(f"- {highlight}")
+                        st.divider()
+                        st.markdown(f"**Provider:** {course['provider']}")
+                        st.markdown(f"**Cost Range:** {course['cost']}")
+                        st.markdown(f"**Format:** {course['format']}")
+                
+                st.divider()
+            
+            # Selection summary
+            if st.session_state.selected_ceus:
+                selected_courses = [c for c in CEU_COURSE_LIBRARY if c["id"] in st.session_state.selected_ceus]
+                total_selected_hours = sum(c["hours"] for c in selected_courses)
+                st.markdown(f"### Your Selection: {len(selected_courses)} courses • {total_selected_hours} hours")
+                
+                for course in selected_courses:
+                    st.markdown(f"- **{course['title']}** — {course['hours']} hrs ({course['category']})")
+                
+                if total_selected_hours >= 24:
+                    st.success(f"✓ You've selected {total_selected_hours} hours — meets the 24-hour requirement!")
+                else:
+                    st.warning(f"You've selected {total_selected_hours} hours. You need 24 hours total.")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tab3:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### Step-by-Step: Expired License Reactivation Path")
+            st.markdown("Follow these steps to reactivate your Texas CNA license.")
+            
+            for step_info in EXPIRED_LICENSE_REACTIVATION_STEPS:
+                with st.expander(f"**Step {step_info['step']}: {step_info['title']}**", expanded=step_info['step'] == 1):
+                    st.markdown(f"**Description:**\n{step_info['description']}")
+                    st.markdown(f"**What to do:**\n{step_info['action']}")
+                    st.markdown("**Checklist:**")
+                    for item in step_info["checklist"]:
+                        st.checkbox(item, key=f"expired_step_{step_info['step']}_item_{item}")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tab4:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### Interactive Reactivation Checklist")
+            st.markdown("Track your progress through the reactivation process. Check off items as you complete them.")
+            
+            checklist_items = RENEWAL_READINESS_CHECKLIST["expired_cna"]
+            completed_count = 0
+            
+            for i, item_data in enumerate(checklist_items):
+                completed = st.checkbox(item_data["item"], key=f"expired_checklist_{i}")
+                if completed:
+                    completed_count += 1
+                st.session_state.renewal_checklist_items[f"expired_{i}"] = completed
+            
+            progress_pct = (completed_count / len(checklist_items)) * 100
+            st.markdown(f"### Progress: {completed_count}/{len(checklist_items)} items complete")
+            st.progress(progress_pct / 100)
+            st.markdown(f"**{progress_pct:.0f}% Complete**")
+            
+            if completed_count == len(checklist_items):
+                st.success("🎉 All items checked! You're ready to submit your reactivation through TULIP.")
+            
+            # Print-friendly version
+            if st.button("📄 Generate Printable Checklist", key="expired_print_checklist"):
+                checklist_text = "TEXAS CNA REACTIVATION CHECKLIST - EXPIRED LICENSE\n" + "="*50 + "\n\n"
+                for i, item_data in enumerate(checklist_items, 1):
+                    status = "☑" if st.session_state.renewal_checklist_items.get(f"expired_{i-1}", False) else "☐"
+                    checklist_text += f"{status} {item_data['item']}\n"
+                st.download_button(
+                    "Download Checklist",
+                    checklist_text,
+                    "cna_reactivation_checklist.txt",
+                    "text/plain",
+                    key="expired_download_checklist"
+                )
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tab5:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### TULIP: Texas Uniform License and Permit System")
+            st.markdown(f"**Official Portal:** [TULIP.texas.gov](https://www.tulip.texas.gov)")
+            
+            st.markdown("### Reactivation Through TULIP")
+            st.markdown("""
+**When you log into TULIP, select:**
+- **If expired < 2 years:** "Renew License"
+- **If expired > 2 years:** "Reinstatement Application"
+
+**You will need:**
+- Your old Certificate Number or Social Security Number
+- Current CEU documentation (24 hours)
+- Updated contact information
+- Proof of employment or intent to work as CNA
+            """)
+            
+            st.divider()
+            
+            st.markdown("### Texas HHSC Support Resources for Reactivation")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**Official Websites:**")
+                st.markdown("[🔗 Texas HHSC CNA Registry](https://hhs.texas.gov/nurses-aids)")
+                st.markdown("[🔗 TULIP System](https://www.tulip.texas.gov)")
+                st.markdown("[🔗 TULIP Support Portal](https://www.tulip.texas.gov/support)")
+            
+            with col2:
+                st.markdown("**Contact Information:**")
+                st.markdown("📞 **Phone:** 512-438-1234")
+                st.markdown("📧 **Email:** contactcna@dshs.texas.gov")
+                st.markdown("💬 **Chat:** Available through TULIP portal")
+            
+            st.markdown("---")
+            
+            st.markdown("### Why Contacting HHSC First Matters")
+            st.info("""
+**Before submitting in TULIP, call Texas HHSC to:**
+1. Confirm your reactivation pathway (renewal vs. reinstatement)
+2. Ask if there are any special requirements for your situation
+3. Verify your old certificate number or provide SSN
+4. Get estimated processing timeline
+5. Ask about any late fees or additional documentation
+
+This 10-minute call can save you from delays!
+            """)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tab6:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### Frequently Asked Questions About Reactivation")
+            
+            faq_items = [
+                ("How long has my license been expired?", "Check your license expiration date to know how long it's been. If < 2 years, the process is easier."),
+                ("Will I lose my seniority or experience?", "Your prior work history remains on record. Reactivation restores your active status."),
+                ("Do I need to find a job before reactivating?", "No. You can reactivate without a job lined up. However, employers may ask to verify your active status."),
+                ("Will I need to retake the CNA exam?", "No. Reactivation only requires updated CEU documentation, not re-testing."),
+                ("Can I work while my reactivation is pending?", "No. You cannot work as a CNA until your license is officially reactivated in TULIP."),
+                ("Will reactivation cost more than renewal?", "The fee is typically the same ($75-$100), though reinstatement may have additional fees. TULIP will show the exact amount."),
+                ("How long does reactivation take?", "Usually 5-10 business days if all documentation is complete. Reinstatement may take longer (2-3 weeks)."),
+                ("What if I can't find my old certificate number?", "You can use your Social Security Number instead. TULIP will look up your record."),
+                ("Can my employer help with the reactivation?", "Your employer can provide Form 5506-NAR verification, but you must submit the reactivation yourself through TULIP."),
+                ("What if my information has changed (name, address)?", "Update your information in TULIP. You may need to provide verification for legal name changes."),
+            ]
+            
+            for question, answer in faq_items:
+                with st.expander(f"**Q: {question}**"):
+                    st.markdown(f"{answer}")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tab7:
+            render_professional_growth("Expired License")
+
+        with tab8:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("### Profile-Based Dashboard (Legacy View)")
+            st.markdown("If you were previously employed and want to view your old profile information:")
+            
+            active_options = cna_df[cna_df["user_type"] != "Student"].copy()
+            if not active_options.empty:
+                active_options["display"] = active_options["first_name"] + " " + active_options["last_name"] + " • " + active_options["license_number"]
+                selected_name = st.selectbox("Select CNA profile", active_options["display"].tolist(), key="expired_profile_select")
+                selected = active_options[active_options["display"] == selected_name].iloc[0]
+
+                summary = compliance_snapshot(selected["cna_id"], selected["expiration_date"], ceu_df)
+                score = readiness_score(summary)
+
+                st.warning(f"**License Status:** EXPIRED (expired {abs(summary['days_left'])} days ago)")
+                st.markdown(f"**CNA:** {selected['first_name']} {selected['last_name']}")
+                st.markdown(f"**License Number:** {selected['license_number']}")
+                st.markdown(f"**Expiration Date:** {selected['expiration_date']}")
+                
+                st.info("This profile shows historical information. To reactivate, use the Step-by-Step guide in the Reactivation Guide tab above.")
+            else:
+                st.info("No profiles available.")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
 # =========================================================
 # VIEW C
 # =========================================================
@@ -1164,6 +3630,7 @@ else:
         '<div class="info-card">Monitor facility readiness, highlight urgent CNA action items, and support TULIP compliance with clear staff-level guidance.</div>',
         unsafe_allow_html=True
     )
+    render_view_visuals("c")
     facility = facility_df.iloc[0]
 
     st.markdown('<div class="card">', unsafe_allow_html=True)

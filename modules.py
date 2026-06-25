@@ -1329,6 +1329,116 @@ PROFESSIONAL_RECOMMENDATIONS = {
     ]
 }
 
+VIDEO_SCRIPT_TEMPLATES = [
+    {
+        "title": "Handwashing and Infection Prevention",
+        "duration": "3 minutes",
+        "objective": "Demonstrate proper hand hygiene technique and explain how each step reduces infection risk.",
+        "script": [
+            "Introduce yourself, identify the resident briefly, and state the objective of the demonstration.",
+            "Explain that hand hygiene is the most important step to prevent infection.",
+            "Wet hands under warm running water, apply soap, and lather thoroughly.",
+            "Rub palms together, between fingers, around thumbs, fingertips, and wrists for at least 20 seconds.",
+            "Rinse from wrists to fingertips while keeping fingertips pointed down.",
+            "Dry hands with a clean paper towel and use that towel to turn off the faucet.",
+            "Summarize the key points: step sequence, 20-second timing, and why each step matters."
+        ]
+    },
+    {
+        "title": "Blood Pressure Measurement and Documentation",
+        "duration": "4 minutes",
+        "objective": "Show correct blood pressure technique, explain proper positioning, and document results accurately.",
+        "script": [
+            "Identify the resident and explain the procedure in simple language.",
+            "Position the resident comfortably with the arm supported at heart level.",
+            "Place the cuff on the bare upper arm, align the arrow with the brachial artery, and secure it snugly.",
+            "Demonstrate proper inflation and deflation while listening to the pulse sounds.",
+            "Record the systolic and diastolic measurements exactly as observed.",
+            "Explain why proper positioning, cuff placement, and documentation ensure accurate readings."
+        ]
+    },
+    {
+        "title": "Safe Transfer from Bed to Wheelchair",
+        "duration": "4 minutes",
+        "objective": "Show safe transfer preparation, gait belt use, and a stable bed-to-wheelchair transfer.",
+        "script": [
+            "Introduce yourself and explain the transfer plan to the resident.",
+            "Lock the bed and wheelchair wheels and ensure the chair is close to the bed.",
+            "Apply a gait belt properly and confirm the resident has non-skid footwear.",
+            "Use proper body mechanics, bend at your knees, and keep the resident's weight close to your body.",
+            "Guide the resident to pivot slowly and sit securely in the wheelchair.",
+            "Confirm the resident is comfortable and document the transfer if required."
+        ]
+    },
+    {
+        "title": "Catheter Care and Urinary Output Measurement",
+        "duration": "3 minutes",
+        "objective": "Demonstrate safe catheter handling, drainage bag positioning, and accurate urine measurement.",
+        "script": [
+            "Explain the catheter care procedure and provide privacy for the resident.",
+            "Put on gloves and check that the drainage tubing is not kinked or resting on the floor.",
+            "Pour the urine into a graduate at eye level and read the amount accurately.",
+            "Discard or clean the equipment according to facility protocol and remove gloves safely.",
+            "Record the exact urine output and report any abnormal color, odor, or amount."
+        ]
+    }
+]
+
+CASE_STUDIES = [
+    {
+        "title": "New Onset Confusion During Evening Care",
+        "chapter": "Chapter 3: Communication and Cultural Awareness",
+        "scenario": "While assisting Mrs. Ramirez with evening hygiene, she becomes confused, insists she needs to go home, and asks you to leave. What is your best immediate response?",
+        "choices": [
+            "Tell her she is safe and continue the care quickly.",
+            "Leave the room and report the behavior later.",
+            "Speak calmly, validate her feelings, and notify the nurse immediately.",
+            "Tell her the staff is too busy and finish the task alone."
+        ],
+        "answer": "Speak calmly, validate her feelings, and notify the nurse immediately.",
+        "rationale": "Calm validation reduces distress and prompt reporting ensures the nurse can assess her confusion."
+    },
+    {
+        "title": "Wet Floor in a Resident Room",
+        "chapter": "Chapter 5: Patient Safety and Body Mechanics",
+        "scenario": "You notice water on the floor near Mr. Lopez's bed while preparing to assist him to the bathroom. What should you do first?",
+        "choices": [
+            "Tell Mr. Lopez to wait while you get a mop.",
+            "Leave the room and ask another CNA to clean it.",
+            "Place a caution sign, clean the spill, and then assist the resident safely.",
+            "Continue with the transfer quickly before anyone slips."
+        ],
+        "answer": "Place a caution sign, clean the spill, and then assist the resident safely.",
+        "rationale": "Eliminating the hazard before caring for the resident prevents falls and maintains safety."
+    },
+    {
+        "title": "Resident Refuses a Bath Due to Feeling Cold",
+        "chapter": "Chapter 6: Hygiene and Grooming",
+        "scenario": "Mrs. Nguyen refuses her bath because she says the water is too cold. What is the best action?",
+        "choices": [
+            "Tell her she must bathe now anyway.",
+            "Check the water temperature, offer a warm blanket, and explain the process.",
+            "Leave and come back in an hour without telling her why.",
+            "Ask another resident to help convince her."
+        ],
+        "answer": "Check the water temperature, offer a warm blanket, and explain the process.",
+        "rationale": "Respecting comfort and explaining care supports dignity and cooperation."
+    },
+    {
+        "title": "Unexpected Urine Output Change",
+        "chapter": "Chapter 7: Elimination and Catheter Care",
+        "scenario": "You measure urinary output and find that the amount is much lower than normal for Mr. Patel. What should you do next?",
+        "choices": [
+            "Ignore it and record a normal amount.",
+            "Report the low output to the nurse and continue monitoring.",
+            "Give him more fluids without telling anyone.",
+            "Wait until the next shift to mention it."
+        ],
+        "answer": "Report the low output to the nurse and continue monitoring.",
+        "rationale": "Low urine output may indicate dehydration or kidney issues and needs prompt nursing evaluation."
+    }
+]
+
 # Helper functions for module access
 def get_module(chapter_key):
     """Retrieve a specific module"""
@@ -1346,3 +1456,460 @@ def get_chapter_quiz(chapter_key):
 def count_total_questions():
     """Count total quiz questions across all chapters"""
     return sum(len(module.get("quiz", [])) for module in CNA_MODULES.values())
+
+# =========================================================
+# TEXAS CNA CEU COURSE LIBRARY - Aligned with Texas DHS Requirements
+# =========================================================
+# All courses meet Texas Department of Health Services standards for in-service education
+# Updated for current TULIP renewal requirements (24 months = 2 years)
+
+CEU_COURSE_LIBRARY = [
+    # INFECTION CONTROL & PREVENTION (8-10 hours total available)
+    {
+        "id": 1,
+        "title": "Annual Infection Prevention & Control Update",
+        "hours": 4,
+        "category": "Infection Control",
+        "required": True,
+        "description": "Texas-mandated annual infection prevention training covering CDC guidelines, handwashing, PPE, standard precautions, and exposure control.",
+        "highlights": ["Handwashing technique", "PPE selection and use", "Standard precautions", "Bloodborne pathogen prevention", "Exposure incident reporting"],
+        "provider": "Texas Department of Health Services (TDHS)",
+        "cost": "$0 - $50",
+        "format": "Online or In-Person"
+    },
+    {
+        "id": 2,
+        "title": "MRSA, C. difficile & HAI Prevention",
+        "hours": 3,
+        "category": "Infection Control",
+        "required": False,
+        "description": "Comprehensive training on healthcare-associated infections, antibiotic resistance, and prevention strategies specific to long-term care settings.",
+        "highlights": ["MRSA prevention", "C. difficile transmission", "HAI reporting", "Environmental cleaning", "Contact precautions"],
+        "provider": "Various TDHS-Approved Providers",
+        "cost": "$30 - $75",
+        "format": "Online or In-Person"
+    },
+    {
+        "id": 3,
+        "title": "COVID-19 & Respiratory Precautions",
+        "hours": 2,
+        "category": "Infection Control",
+        "required": False,
+        "description": "Updated training on respiratory prevention, fit-testing awareness, quarantine protocols, and resident care during respiratory outbreaks.",
+        "highlights": ["Respiratory hygiene", "Mask protocols", "Quarantine procedures", "Symptom monitoring", "Communication during isolation"],
+        "provider": "Texas HHSC & CDC",
+        "cost": "$0 - $30",
+        "format": "Online"
+    },
+
+    # GERIATRICS & AGING (6-8 hours total available)
+    {
+        "id": 10,
+        "title": "Geriatric Care Fundamentals",
+        "hours": 4,
+        "category": "Geriatrics",
+        "required": True,
+        "description": "Texas-mandated training on aging changes, age-related health conditions, medications in older adults, and person-centered care for seniors.",
+        "highlights": ["Normal aging changes", "Common geriatric conditions", "Fall prevention", "Medication awareness", "Dignity in care"],
+        "provider": "Texas Department of Health Services (TDHS)",
+        "cost": "$0 - $60",
+        "format": "Online or In-Person"
+    },
+    {
+        "id": 11,
+        "title": "Advanced Geriatric Assessment & Care Planning",
+        "hours": 3,
+        "category": "Geriatrics",
+        "required": False,
+        "description": "Advanced training on assessing functional status, nutrition, mobility, continence, and pain management in elderly residents.",
+        "highlights": ["Functional assessment", "Nutritional needs", "Mobility & transfers", "Continence management", "Pain assessment"],
+        "provider": "Various TDHS-Approved Providers",
+        "cost": "$40 - $80",
+        "format": "Online or In-Person"
+    },
+    {
+        "id": 12,
+        "title": "Skin Care & Pressure Injury Prevention",
+        "hours": 3,
+        "category": "Geriatrics",
+        "required": False,
+        "description": "Specialized training on skin health, pressure injury prevention, wound care basics, and documentation for elderly residents.",
+        "highlights": ["Skin assessment", "Pressure relief strategies", "Positioning", "Moisture management", "Reporting changes"],
+        "provider": "Various TDHS-Approved Providers",
+        "cost": "$35 - $70",
+        "format": "Online or In-Person"
+    },
+
+    # DEMENTIA & ALZHEIMER'S CARE (6-8 hours total available)
+    {
+        "id": 20,
+        "title": "Dementia & Alzheimer's Care Essentials",
+        "hours": 4,
+        "category": "Dementia/Alzheimer's",
+        "required": True,
+        "description": "Texas-mandated training on dementia types, behavioral management, communication strategies, and therapeutic approaches for dementia care.",
+        "highlights": ["Dementia progression", "Behavior triggers", "Therapeutic communication", "Reality orientation", "Validation techniques"],
+        "provider": "Texas Department of Health Services (TDHS)",
+        "cost": "$0 - $60",
+        "format": "Online or In-Person"
+    },
+    {
+        "id": 21,
+        "title": "Wandering, Elopement & Safety in Dementia",
+        "hours": 3,
+        "category": "Dementia/Alzheimer's",
+        "required": False,
+        "description": "Advanced training on preventing wandering and elopement, environmental modifications, monitoring strategies, and emergency response protocols.",
+        "highlights": ["Elopement prevention", "Wandering management", "Environmental safety", "Monitoring techniques", "Response procedures"],
+        "provider": "Various TDHS-Approved Providers",
+        "cost": "$35 - $70",
+        "format": "Online or In-Person"
+    },
+    {
+        "id": 22,
+        "title": "End-of-Life Care in Dementia",
+        "hours": 3,
+        "category": "Dementia/Alzheimer's",
+        "required": False,
+        "description": "Compassionate care training for advanced dementia, dignity at end-of-life, comfort care measures, and supporting families through decline.",
+        "highlights": ["Comfort measures", "Eating/drinking changes", "Pain signs", "Family communication", "Dignity preservation"],
+        "provider": "Various TDHS-Approved Providers",
+        "cost": "$40 - $75",
+        "format": "Online or In-Person"
+    },
+
+    # RESIDENT RIGHTS & SAFETY (4-6 hours total available)
+    {
+        "id": 30,
+        "title": "Resident Rights & Legal Protections",
+        "hours": 3,
+        "category": "Resident Rights",
+        "required": False,
+        "description": "Training on resident rights, advance directives, autonomy, privacy, confidentiality, and CNAs' legal obligations in Texas long-term care.",
+        "highlights": ["Resident bill of rights", "Autonomy & choice", "Privacy & dignity", "Confidentiality (HIPAA)", "Reporting abuse/neglect"],
+        "provider": "Texas HHSC & Facility",
+        "cost": "$0 - $40",
+        "format": "Online or In-Person"
+    },
+    {
+        "id": 31,
+        "title": "Recognizing & Reporting Abuse, Neglect & Exploitation",
+        "hours": 3,
+        "category": "Resident Rights",
+        "required": False,
+        "description": "Mandatory training on identifying signs of abuse, neglect, exploitation, retaliation, and reporting procedures per Texas regulations.",
+        "highlights": ["Abuse types", "Neglect indicators", "Exploitation recognition", "Reporting procedures", "Mandated reporter laws"],
+        "provider": "Texas HHSC & Facility",
+        "cost": "$0 - $40",
+        "format": "Online or In-Person"
+    },
+
+    # SAFETY & TRANSFERS (4-6 hours total available)
+    {
+        "id": 40,
+        "title": "Safe Patient Handling & Mechanical Lifts",
+        "hours": 3,
+        "category": "Safety",
+        "required": False,
+        "description": "Practical training on proper body mechanics, use of mechanical lifts, preventing injuries to residents and caregivers, and safe transfer techniques.",
+        "highlights": ["Body mechanics", "Mechanical lifts", "Transfer techniques", "Fall prevention", "Injury prevention"],
+        "provider": "Various TDHS-Approved Providers",
+        "cost": "$30 - $60",
+        "format": "In-Person"
+    },
+    {
+        "id": 41,
+        "title": "Fall Risk Assessment & Prevention",
+        "hours": 2,
+        "category": "Safety",
+        "required": False,
+        "description": "Training on identifying fall risk factors, environmental hazard reduction, monitoring strategies, and response to falls.",
+        "highlights": ["Risk assessment", "Hazard identification", "Monitoring", "Prevention strategies", "Fall response"],
+        "provider": "Various TDHS-Approved Providers",
+        "cost": "$20 - $40",
+        "format": "Online or In-Person"
+    },
+    {
+        "id": 42,
+        "title": "Emergency Response & First Aid Awareness",
+        "hours": 2,
+        "category": "Safety",
+        "required": False,
+        "description": "Training on recognizing medical emergencies, CPR awareness, emergency protocols, evacuation procedures, and incident reporting.",
+        "highlights": ["Emergency recognition", "Response protocols", "Evacuation procedures", "Incident reporting", "Chain of command"],
+        "provider": "Various TDHS-Approved Providers",
+        "cost": "$25 - $50",
+        "format": "In-Person or Online"
+    },
+
+    # COMMUNICATION & DOCUMENTATION (2-4 hours)
+    {
+        "id": 50,
+        "title": "Documentation & Recording Procedures",
+        "hours": 2,
+        "category": "Communication",
+        "required": False,
+        "description": "Training on proper documentation, charting, electronic health records (EHR), objective vs. subjective data, and compliance with regulations.",
+        "highlights": ["Charting basics", "Objective data", "EHR navigation", "Timely documentation", "Legal requirements"],
+        "provider": "Facility & TDHS-Approved Providers",
+        "cost": "$0 - $35",
+        "format": "Online or In-Person"
+    },
+    {
+        "id": 51,
+        "title": "Effective Communication with Residents & Families",
+        "hours": 2,
+        "category": "Communication",
+        "required": False,
+        "description": "Training on therapeutic communication, active listening, cultural competency, and communicating with residents with hearing/speech impairments.",
+        "highlights": ["Active listening", "Cultural sensitivity", "Communication barriers", "Difficult conversations", "Family interaction"],
+        "provider": "Facility & TDHS-Approved Providers",
+        "cost": "$0 - $35",
+        "format": "Online or In-Person"
+    },
+
+    # NUTRITION & HYDRATION (2-3 hours)
+    {
+        "id": 60,
+        "title": "Nutrition, Hydration & Feeding in Long-Term Care",
+        "hours": 2,
+        "category": "Nutrition",
+        "required": False,
+        "description": "Training on nutritional needs of elderly residents, dietary restrictions, feeding assistance, hydration monitoring, and documentation.",
+        "highlights": ["Nutritional needs", "Dietary restrictions", "Feeding assistance", "Hydration awareness", "Swallowing precautions"],
+        "provider": "Facility & TDHS-Approved Providers",
+        "cost": "$0 - $35",
+        "format": "Online or In-Person"
+    },
+
+    # MENTAL HEALTH & BEHAVIORAL MANAGEMENT (2-3 hours)
+    {
+        "id": 70,
+        "title": "Mental Health Awareness & Behavioral Management",
+        "hours": 2,
+        "category": "Mental Health",
+        "required": False,
+        "description": "Training on recognizing depression, anxiety, behavioral challenges in residents, de-escalation techniques, and when to notify the nurse.",
+        "highlights": ["Mental health signs", "De-escalation", "Triggers", "Coping strategies", "Reporting procedures"],
+        "provider": "Facility & TDHS-Approved Providers",
+        "cost": "$0 - $35",
+        "format": "Online or In-Person"
+    },
+
+    # SPECIALTY TOPICS (1-3 hours each)
+    {
+        "id": 80,
+        "title": "Catheter Care & Urinary Continence Management",
+        "hours": 2,
+        "category": "Specialty",
+        "required": False,
+        "description": "Training on foley catheter care, UTI prevention, incontinence management, specimen collection, and documentation.",
+        "highlights": ["Catheter maintenance", "Infection prevention", "Specimen collection", "Documentation", "Reporting changes"],
+        "provider": "Facility & TDHS-Approved Providers",
+        "cost": "$0 - $35",
+        "format": "Online or In-Person"
+    },
+    {
+        "id": 81,
+        "title": "Vital Signs & Health Monitoring",
+        "hours": 2,
+        "category": "Specialty",
+        "required": False,
+        "description": "Training on measuring and recording vital signs, recognizing abnormal values, and reporting significant changes.",
+        "highlights": ["Blood pressure", "Temperature", "Pulse/respiration", "Pain assessment", "Trend reporting"],
+        "provider": "Facility & TDHS-Approved Providers",
+        "cost": "$0 - $35",
+        "format": "Online or In-Person"
+    },
+]
+
+# =========================================================
+# RENEWAL CHECKLISTS & STEP-BY-STEP GUIDES
+# =========================================================
+
+ACTIVE_LICENSE_RENEWAL_STEPS = [
+    {
+        "step": 1,
+        "title": "Monitor Your Timeline",
+        "description": "Your license expires every 24 months. The 90-day TULIP renewal window opens exactly 90 days before expiration.",
+        "action": "Check your license expiration date. Calculate: Expiration Date - 90 days = TULIP window opens.",
+        "checklist": ["Know your exact expiration date", "Set a calendar reminder 120 days before expiration", "Track days remaining in readiness dashboard"]
+    },
+    {
+        "step": 2,
+        "title": "Complete Required In-Service Education",
+        "description": "Texas requires 24 hours of in-service education over your 24-month license period.",
+        "action": "Complete the following required courses before TULIP window opens (if possible):\n• 4 hours: Annual Infection Prevention & Control (required each year)\n• 4 hours: Geriatric Care Fundamentals (required)\n• 4 hours: Dementia & Alzheimer's Care Essentials (required)\n• 12 additional hours: Choose from available courses to reach 24 hours total",
+        "checklist": ["Complete 4 hours infection control training", "Complete 4 hours geriatrics training", "Complete 4 hours dementia training", "Complete 12 additional hours", "Obtain certificates for all courses"]
+    },
+    {
+        "step": 3,
+        "title": "Gather Your Documentation",
+        "description": "Texas requires proof of all in-service education and employer verification.",
+        "action": "Collect:\n• Original CEU certificates or attendance documentation\n• Proof of employer verification (if required)\n• Current photo ID\n• Social Security Number (for identity verification)\n• Contact information update if changed",
+        "checklist": ["Original CEU certificates collected", "Employer verification forms ready", "Photo ID current", "Contact info verified/updated", "All documents organized"]
+    },
+    {
+        "step": 4,
+        "title": "Wait for TULIP Window to Open",
+        "description": "You cannot begin renewal until the 90-day TULIP window officially opens.",
+        "action": "Wait for the TULIP notification. When the window opens, you will receive communication from Texas HHSC. Sign in to TULIP portal.",
+        "checklist": ["TULIP window opened (verify date)", "Received TULIP notification", "Can log into TULIP portal", "Confirmed profile details in TULIP"]
+    },
+    {
+        "step": 5,
+        "title": "Submit Renewal Through TULIP",
+        "description": "Use the TULIP (Texas Uniform License and Permit System) to submit your renewal application.",
+        "action": "Log into TULIP and:\n1. Verify your personal information (name, license #, DOB)\n2. Upload/confirm all 24-hour CEU documentation\n3. Confirm required topics are covered (geriatrics, dementia, infection control)\n4. Add or update employer verification if needed\n5. Review summary and submit application\n6. Pay renewal fee (current fee ~$75-$100)",
+        "checklist": ["Logged into TULIP securely", "Personal info verified", "All CEU docs uploaded/confirmed", "Required topics confirmed", "Employer verification included", "Application reviewed carefully", "Payment processed", "Confirmation received"]
+    },
+    {
+        "step": 6,
+        "title": "Monitor Status & Respond to Requests",
+        "description": "After submission, TULIP may request additional information or verification.",
+        "action": "Check TULIP portal regularly for:\n• Status updates\n• Deficiency notices (missing documents)\n• Verification requests\n• Renewal approval confirmation",
+        "checklist": ["TULIP status checked within 3 days of submission", "Any deficiency requests addressed immediately", "Verification requests responded to", "Approval confirmation received"]
+    },
+    {
+        "step": 7,
+        "title": "Receive New License",
+        "description": "Upon approval, your renewed license will be processed and issued.",
+        "action": "Your new license will be:\n• Sent by mail to your address on file\n• Available in TULIP portal as a downloadable certificate\n• Valid for the next 24 months",
+        "checklist": ["New license received in mail", "New license verified in TULIP", "Updated license posted at workplace", "Calendar reminder set for next renewal"]
+    }
+]
+
+EXPIRED_LICENSE_REACTIVATION_STEPS = [
+    {
+        "step": 1,
+        "title": "Understand Your Situation",
+        "description": "Your Texas CNA license has expired. You cannot work as a CNA until your license is renewed or reactivated.",
+        "action": "Confirm:\n• Your license expiration date\n• How long your license has been expired\n• Your employment status (if currently employed)",
+        "checklist": ["Confirmed exact expiration date", "Understanded lapsed time", "Verified employment implications", "Knows Texas regulations on expired licenses"]
+    },
+    {
+        "step": 2,
+        "title": "Determine Your Path: Standard Renewal vs. Reinstatement",
+        "description": "Depending on how long your license has been expired, you may follow standard renewal or reinstatement procedures.",
+        "action": "Check with Texas HHSC:\n• If lapsed < 2 years: Standard Renewal pathway (use TULIP)\n• If lapsed > 2 years: May require reinstatement application with additional requirements",
+        "checklist": ["Contacted Texas HHSC for status", "Confirmed which pathway applies", "Understood additional requirements if applicable", "Documented guidance from HHSC"]
+    },
+    {
+        "step": 3,
+        "title": "Complete Updated In-Service Education (If Required)",
+        "description": "Expired licenses may require current training proof.",
+        "action": "Complete or update:\n• Annual Infection Prevention & Control (4 hours)\n• Geriatric Care Fundamentals (4 hours)\n• Dementia & Alzheimer's Care (4 hours)\n• 12 additional hours of approved CEU courses",
+        "checklist": ["Completed infection control course", "Completed geriatrics course", "Completed dementia course", "Completed 12 additional hours", "All certificates obtained"]
+    },
+    {
+        "step": 4,
+        "title": "Verify Employer Status",
+        "description": "If currently employed, your facility may require verification documentation.",
+        "action": "Provide your employer with:\n• Copy of CEU certificates\n• Status updates from HHSC\n• Timeline for license reactivation\n• Form 5506-NAR if required by facility",
+        "checklist": ["Employer notified of status", "CEU copies provided to employer", "5506-NAR form (if needed) prepared", "Employer verification arranged"]
+    },
+    {
+        "step": 5,
+        "title": "Access TULIP for Renewal/Reinstatement",
+        "description": "Use TULIP portal to begin renewal or reinstatement process.",
+        "action": "Log into TULIP and select:\n• 'Renew License' if < 2 years lapsed\n• 'Reinstatement' if > 2 years lapsed\nProvide:\n• Current CEU documentation\n• Current contact information\n• Employer verification",
+        "checklist": ["TULIP account accessible", "Correct application type selected", "Documentation uploaded", "Contact info current", "Ready to submit"]
+    },
+    {
+        "step": 6,
+        "title": "Submit Application & Fee",
+        "description": "Complete and submit your renewal or reinstatement application.",
+        "action": "Submit application with:\n• Renewal fee (current fee ~$75-$100)\n• All required documentation\n• Verification of current employment or intent to work as CNA",
+        "checklist": ["Application completed fully", "Fee paid successfully", "All docs submitted", "Confirmation receipt saved", "Email confirmation received"]
+    },
+    {
+        "step": 7,
+        "title": "Monitor Status & Follow Up",
+        "description": "Track your application status and respond to any requests.",
+        "action": "Check TULIP daily for:\n• Status updates\n• Requests for additional information\n• Deficiency notices\n• Approval confirmation",
+        "checklist": ["TULIP status checked daily for 30 days", "Any requests addressed immediately", "Follow-up calls made if needed", "Expected timeline confirmed"]
+    },
+    {
+        "step": 8,
+        "title": "Receive Reactivated License",
+        "description": "Upon approval, your license will be reactivated.",
+        "action": "Your reactivated license will be:\n• Sent by mail to address on file\n• Available in TULIP portal\n• Valid for 24 months from approval date\n• Can be verified immediately in TULIP",
+        "checklist": ["License reactivation confirmed in TULIP", "License certificate received", "New expiration date noted", "Employer notified of reactivation", "Can resume work as CNA"]
+    }
+]
+
+# TULIP (Texas Uniform License and Permit System) Information
+TULIP_INFORMATION = {
+    "system_name": "TULIP - Texas Uniform License and Permit System",
+    "purpose": "Online portal for Texas professional licensing, including CNA renewal and reinstatement",
+    "official_url": "https://www.tulip.texas.gov",
+    "renewal_window": "90 days before license expiration",
+    "required_documents": [
+        "Proof of 24-hour in-service education (CEU certificates)",
+        "Photo identification",
+        "Proof of employer verification (Form 5506-NAR if required)",
+        "Current contact information"
+    ],
+    "renewal_fee": "$75-$100 (subject to change - verify in TULIP)",
+    "processing_time": "5-10 business days after submission",
+    "support_resources": {
+        "Texas HHSC": "https://hhs.texas.gov/nurses-aids",
+        "TULIP Support": "https://www.tulip.texas.gov/support",
+        "Phone": "512-438-1234",
+        "Email": "contactcna@dshs.texas.gov"
+    },
+    "key_dates": {
+        "renewal_window_opens": "90 days before expiration",
+        "renewal_deadline": "Expiration date (late renewals may require reinstatement)",
+        "license_validity": "24 months from approval date"
+    }
+}
+
+# RENEWAL READINESS CHECKLIST - Print-Friendly
+RENEWAL_READINESS_CHECKLIST = {
+    "active_cna": [
+        {"item": "Know your license expiration date", "completed": False},
+        {"item": "Calculate TULIP window opening date (90 days before expiration)", "completed": False},
+        {"item": "Complete 4-hour Infection Prevention & Control training", "completed": False},
+        {"item": "Complete 4-hour Geriatric Care training", "completed": False},
+        {"item": "Complete 4-hour Dementia & Alzheimer's training", "completed": False},
+        {"item": "Complete 12 additional hours of approved CEU courses", "completed": False},
+        {"item": "Collect all CEU certificates", "completed": False},
+        {"item": "Prepare employer verification (if needed)", "completed": False},
+        {"item": "Verify contact information is current", "completed": False},
+        {"item": "Create TULIP account if not already done", "completed": False},
+        {"item": "Wait for TULIP renewal window to open (90 days before expiration)", "completed": False},
+        {"item": "Log into TULIP and verify personal information", "completed": False},
+        {"item": "Upload all 24-hour CEU documentation", "completed": False},
+        {"item": "Confirm required topics: Infection Control, Geriatrics, Dementia", "completed": False},
+        {"item": "Include employer verification documentation", "completed": False},
+        {"item": "Review application one more time before submitting", "completed": False},
+        {"item": "Submit renewal application and fee", "completed": False},
+        {"item": "Save confirmation receipt and submission number", "completed": False},
+        {"item": "Monitor TULIP for status updates", "completed": False},
+        {"item": "Receive new license and verify in TULIP", "completed": False},
+    ],
+    "expired_cna": [
+        {"item": "Confirm your license expiration date", "completed": False},
+        {"item": "Determine reactivation pathway (renewal vs. reinstatement)", "completed": False},
+        {"item": "Contact Texas HHSC for guidance on your specific situation", "completed": False},
+        {"item": "Complete or update 4-hour Infection Prevention & Control training", "completed": False},
+        {"item": "Complete or update 4-hour Geriatric Care training", "completed": False},
+        {"item": "Complete or update 4-hour Dementia & Alzheimer's training", "completed": False},
+        {"item": "Complete 12 additional hours of approved CEU courses", "completed": False},
+        {"item": "Collect all CEU certificates and transcripts", "completed": False},
+        {"item": "Notify current/prospective employer of license status", "completed": False},
+        {"item": "Prepare Form 5506-NAR if required by employer", "completed": False},
+        {"item": "Verify contact information is current", "completed": False},
+        {"item": "Access or create TULIP account", "completed": False},
+        {"item": "Select correct application type in TULIP (Renewal or Reinstatement)", "completed": False},
+        {"item": "Upload all current CEU documentation", "completed": False},
+        {"item": "Confirm required topics: Infection Control, Geriatrics, Dementia", "completed": False},
+        {"item": "Include employer verification and 5506-NAR if applicable", "completed": False},
+        {"item": "Review application carefully for accuracy", "completed": False},
+        {"item": "Submit reactivation application and renewal fee", "completed": False},
+        {"item": "Save confirmation receipt and submission number", "completed": False},
+        {"item": "Check TULIP daily for status and requests", "completed": False},
+        {"item": "Receive reactivated license and verify in TULIP", "completed": False},
+    ]
+}
