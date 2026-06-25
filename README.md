@@ -1,4 +1,4 @@
-# CNA & TULIP-Link - Texas CNA Academy
+# CNA & TULIP Texas CNA Academy
 
 A free, mobile-friendly web application for the Texas healthcare community.
 
@@ -14,7 +14,7 @@ Built for:
 ### Option 1 — Click the link
 Open this link in any browser on your phone or computer:
 
-> **[Your Streamlit URL will appear here after deployment]**
+> **[http://texascnaacademyapp.com]**
 
 ---
 
