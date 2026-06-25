@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import html
 from datetime import date, timedelta
 
 st.set_page_config(
@@ -15,26 +16,35 @@ st.set_page_config(
 st.markdown("""
 <style>
 :root{
-    --bg:#f6f5f1;
+    --bg:#f5f7fb;
     --surface:#ffffff;
-    --surface-2:#f3f4f6;
-    --surface-3:#ecfeff;
-    --text:#1f2937;
-    --muted:#6b7280;
-    --primary:#0f766e;
-    --primary-dark:#134e4a;
-    --border:#d1d5db;
-    --success:#166534;
-    --success-soft:#dcfce7;
-    --danger:#b91c1c;
-    --danger-soft:#fee2e2;
+    --surface-2:#f8fafc;
+    --surface-3:#eef6ff;
+    --text:#16253d;
+    --muted:#5c6b82;
+    --primary:#1d74d7;
+    --primary-dark:#0d4f9b;
+    --orange:#ff7a1a;
+    --orange-soft:#fff1e7;
+    --green:#1ca35d;
+    --green-soft:#e8fbef;
+    --blue-soft:#e8f2ff;
+    --danger:#c2410c;
+    --danger-soft:#fff0ea;
     --warning:#b45309;
-    --warning-soft:#ffedd5;
-    --info:#075985;
-    --info-soft:#e0f2fe;
-    --shadow:0 10px 24px rgba(15,23,42,.08);
-    --radius:18px;
+    --warning-soft:#fff4d6;
+    --info:#0f5db4;
+    --info-soft:#e7f1ff;
+    --border:#dce5f0;
+    --shadow:0 18px 42px rgba(21,42,73,.08);
+    --shadow-hover:0 24px 48px rgba(21,42,73,.14);
+    --radius:22px;
     --radius-sm:12px;
+    --space-xs:.45rem;
+    --space-sm:.85rem;
+    --space-md:1rem;
+    --pill-border-opacity:.36;
+    --pill-bg-opacity:.14;
 }
 html, body, [class*="css"] {
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
@@ -42,36 +52,127 @@ html, body, [class*="css"] {
 }
 body { background:var(--bg); }
 .block-container {
-    padding-top:1rem;
+    padding-top:.5rem;
     padding-bottom:4rem;
     max-width:1280px;
 }
+.stApp{
+    background:
+        radial-gradient(circle at top left, rgba(255,122,26,.10), transparent 24%),
+        radial-gradient(circle at top right, rgba(29,116,215,.10), transparent 28%),
+        var(--bg);
+}
 .main-hero{
-    background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);
-    color:white;
+    background:linear-gradient(135deg,#ffffff 0%,#f7fbff 58%,#eef6ff 100%);
+    color:var(--text);
     border-radius:var(--radius);
-    padding:1.2rem 1.2rem;
+    padding:1.5rem 1.5rem;
     box-shadow:var(--shadow);
-    margin-bottom:1rem;
+    border:1px solid rgba(29,116,215,.10);
+    margin-bottom:1.2rem;
+}
+.eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:.45rem;
+    border-radius:999px;
+    background:var(--orange-soft);
+    color:var(--orange);
+    padding:.36rem .72rem;
+    font-size:.8rem;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+.hero-title{
+    font-size:2.35rem;
+    line-height:1.12;
+    margin:.9rem 0 .55rem;
+    font-weight:800;
+}
+.hero-copy{
+    color:var(--muted);
+    font-size:1.02rem;
+    line-height:1.65;
+    max-width:760px;
+}
+.hero-highlights{
+    display:flex;
+    flex-wrap:wrap;
+    gap:.75rem;
+    margin-top:1.1rem;
+}
+.hero-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:.45rem;
+    padding:.6rem .88rem;
+    border-radius:16px;
+    background:#fff;
+    border:1px solid var(--border);
+    color:var(--text);
+    font-weight:600;
+}
+.breadcrumb-bar{
+    display:flex;
+    align-items:center;
+    gap:.45rem;
+    color:var(--muted);
+    font-size:.9rem;
+    font-weight:600;
+    margin:0 0 .8rem .2rem;
+}
+.main-hero h1{
+    margin:0;
+    font-size:1.9rem;
+    font-weight:800;
+}
+.hero-sub{
+    margin-top:var(--space-xs);
+    margin-bottom:var(--space-sm);
+    font-size:1rem;
+    line-height:1.5;
+    color:#dbeafe;
+}
+.hero-pills{
+    display:flex;
+    gap:var(--space-xs);
+    flex-wrap:wrap;
+}
+.hero-pill{
+    border:1px solid rgba(255,255,255,var(--pill-border-opacity));
+    background:rgba(255,255,255,var(--pill-bg-opacity));
+    border-radius:999px;
+    padding:.26rem .7rem;
+    font-size:.85rem;
+    font-weight:700;
 }
 .card{
     background:var(--surface);
     border:1px solid var(--border);
     border-radius:var(--radius);
-    padding:1rem;
+    padding:1.15rem;
     box-shadow:var(--shadow);
-    margin-bottom:1rem;
+    margin-bottom:1.15rem;
 }
 .soft-card{
-    background:#ecfeff;
-    border:1px solid #67e8f9;
+    background:var(--surface-2);
+    border:1px solid var(--border);
     border-radius:var(--radius);
     padding:1rem;
     margin-bottom:1rem;
 }
+.interactive-card{
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.interactive-card:hover{
+    transform:translateY(-4px);
+    box-shadow:var(--shadow-hover);
+    border-color:rgba(29,116,215,.24);
+}
 .info-card{
-    background:var(--surface-3);
-    border:1px solid #bae6fd;
+    background:linear-gradient(135deg,#f8fbff 0%,#eef6ff 100%);
+    border:1px solid #cfe1fb;
     border-radius:var(--radius);
     padding:1rem;
     margin-bottom:1rem;
@@ -87,7 +188,7 @@ body { background:var(--bg); }
 }
 .kpi{
     color:var(--primary);
-    font-size:1.85rem;
+    font-size:2rem;
     font-weight:800;
 }
 .label{
@@ -101,10 +202,11 @@ body { background:var(--bg); }
     font-size:.82rem;
     font-weight:700;
 }
-.badge-green{background:var(--success-soft);color:var(--success);}
+.badge-green{background:var(--green-soft);color:var(--green);}
 .badge-red{background:var(--danger-soft);color:var(--danger);}
 .badge-amber{background:var(--warning-soft);color:var(--warning);}
 .badge-blue{background:var(--info-soft);color:var(--info);}
+.badge-orange{background:var(--orange-soft);color:var(--orange);}
 .critical{
     color:var(--danger);
     font-weight:800;
@@ -117,7 +219,7 @@ body { background:var(--bg); }
     margin-bottom:.45rem;
 }
 .sms-box{
-    background:#111827;
+    background:#0b1220;
     color:#f9fafb;
     border-radius:var(--radius-sm);
     padding:.95rem;
@@ -132,31 +234,236 @@ body { background:var(--bg); }
     color:var(--muted);
     font-size:.88rem;
 }
-.home-btn-card{
-    background:var(--surface);
-    border:2px solid var(--primary);
+.progress-shell{
+    background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);
+    border:1px solid var(--border);
     border-radius:var(--radius);
-    padding:2rem 1.5rem;
-    box-shadow:var(--shadow);
-    text-align:center;
+    padding:1rem 1.1rem;
     margin-bottom:1rem;
-    min-height:180px;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
+    box-shadow:var(--shadow);
 }
-.home-btn-icon{font-size:2.6rem;margin-bottom:.5rem;}
-.home-btn-title{font-size:1.2rem;font-weight:800;color:var(--primary-dark);margin-bottom:.35rem;}
-.home-btn-desc{font-size:.9rem;color:var(--muted);line-height:1.45;}
+.progress-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:1rem;
+    margin-bottom:.7rem;
+}
+.progress-percent{
+    font-size:2.25rem;
+    font-weight:800;
+    color:var(--primary-dark);
+    line-height:1;
+}
+.progress-copy{
+    color:var(--muted);
+    font-size:.94rem;
+}
+.course-thumb{
+    height:88px;
+    border-radius:18px;
+    background:linear-gradient(135deg,#1d74d7 0%,#42a1ff 55%,#7ec9ff 100%);
+    color:#fff;
+    display:flex;
+    align-items:flex-end;
+    justify-content:flex-start;
+    padding:1rem;
+    font-size:1.65rem;
+    font-weight:800;
+    margin-bottom:.9rem;
+}
+.course-card-title{
+    font-size:1.06rem;
+    font-weight:800;
+    margin:.7rem 0 .35rem;
+}
+.course-card-copy{
+    color:var(--muted);
+    min-height:3.4rem;
+    line-height:1.55;
+    font-size:.93rem;
+}
+.mini-progress{
+    width:100%;
+    height:10px;
+    background:#e7eef7;
+    border-radius:999px;
+    overflow:hidden;
+    margin:.85rem 0 .45rem;
+}
+.mini-progress > span{
+    display:block;
+    height:100%;
+    background:linear-gradient(90deg,var(--orange) 0%,#ff9d4d 48%,var(--green) 100%);
+    border-radius:999px;
+}
+.course-card-meta{
+    display:flex;
+    justify-content:space-between;
+    gap:.65rem;
+    color:var(--muted);
+    font-size:.85rem;
+}
+.quiz-shell{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:1rem;
+    margin-bottom:.9rem;
+}
+.quiz-label{
+    color:var(--primary);
+    font-size:.82rem;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin-bottom:.4rem;
+}
+.pill-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:.55rem;
+    margin-bottom:.85rem;
+}
+.pill{
+    display:inline-flex;
+    align-items:center;
+    gap:.4rem;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:.45rem .8rem;
+    font-size:.87rem;
+    color:var(--text);
+    font-weight:600;
+}
+.section-title{
+    font-size:1.35rem;
+    font-weight:800;
+    margin:0 0 .85rem;
+}
+section[data-testid="stSidebar"]{
+    background:linear-gradient(180deg,#f8fbff 0%,#eef5fc 100%);
+    border-right:1px solid var(--border);
+}
+section[data-testid="stSidebar"] .block-container{
+    padding-top:1.15rem;
+}
+[data-testid="stSidebar"] .sidebar-brand{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:1rem;
+    box-shadow:var(--shadow);
+    margin-bottom:1rem;
+}
+[data-testid="stSidebar"] .sidebar-panel{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:.9rem 1rem;
+    margin-top:1rem;
+}
+[data-testid="stSidebar"] .sidebar-panel p{
+    color:var(--muted);
+    margin-bottom:.3rem;
+}
+[data-testid="stSidebar"] .stRadio > label,
+[data-testid="stSidebar"] .stSelectbox > label{
+    font-weight:700;
+    color:var(--text);
+}
+[data-testid="stSidebar"] .stRadio [role="radiogroup"]{
+    gap:.5rem;
+}
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] > label{
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:14px;
+    padding:.55rem .7rem;
+}
+[data-testid="stSidebar"] .stButton button,
+.stButton button{
+    border-radius:14px;
+    border:1px solid transparent;
+    background:linear-gradient(135deg,var(--orange) 0%,#ff9d4d 100%);
+    color:#fff;
+    font-weight:700;
+    box-shadow:none;
+}
+.stButton button:hover{
+    border-color:transparent;
+    color:#fff;
+}
+.stTabs [data-baseweb="tab-list"]{
+    gap:.45rem;
+    flex-wrap:wrap;
+}
+.stTabs [data-baseweb="tab"]{
+    height:auto;
+    padding:.55rem .9rem;
+    background:#fff;
+    border-radius:999px;
+    border:1px solid var(--border);
+}
+.stTabs [aria-selected="true"]{
+    color:var(--primary);
+    border-color:rgba(29,116,215,.28);
+    background:var(--info-soft);
+}
+div[data-testid="stProgressBar"] > div > div{
+    background:#e5edf7;
+    border-radius:999px;
+}
+div[data-testid="stProgressBar"] > div > div > div{
+    background:linear-gradient(90deg,var(--orange) 0%,#ffa44c 45%,var(--green) 100%);
+    border-radius:999px;
+}
+div[data-testid="stAlert"]{
+    border-radius:16px;
+}
 div[data-testid="stDataFrame"]{
     border:1px solid var(--border);
     border-radius:var(--radius);
     overflow:hidden;
 }
+section[data-testid="stSidebar"]{
+    background:linear-gradient(180deg,#ffffff 0%,#f2f8ff 100%);
+    border-right:1px solid var(--border);
+}
+section[data-testid="stSidebar"] h2{
+    color:var(--primary-dark);
+    font-weight:800;
+}
+div[data-baseweb="tab-list"]{
+    gap:.4rem;
+}
+button[data-baseweb="tab"]{
+    border-radius:999px !important;
+    border:1px solid var(--border) !important;
+    background:#fff !important;
+    color:#334155 !important;
+    font-weight:700 !important;
+}
+button[data-baseweb="tab"][aria-selected="true"]{
+    border-color:var(--primary) !important;
+    color:var(--primary-dark) !important;
+    box-shadow:0 4px 14px rgba(30,58,138,.16);
+}
+button[kind="primary"]{
+    background:linear-gradient(135deg,var(--accent),var(--primary)) !important;
+    border:none !important;
+    box-shadow:0 8px 20px rgba(29,78,216,.24);
+}
+button[kind="secondary"]{
+    border:1px solid var(--border) !important;
+}
 @media (max-width:768px){
     .block-container{padding-left:.8rem;padding-right:.8rem;}
-    .kpi{font-size:1.45rem;}
+    .hero-title{font-size:1.8rem;}
+    .kpi,.progress-percent{font-size:1.55rem;}
+    .progress-head,.course-card-meta{flex-direction:column;}
+    .course-card-copy{min-height:auto;}
 }
 </style>
 """, unsafe_allow_html=True)
@@ -165,6 +472,41 @@ div[data-testid="stDataFrame"]{
 # HELPERS
 # =========================================================
 TODAY = date.today()
+# Readiness milestones keep the progress summaries aligned with the app's mastery-oriented study and renewal flows.
+SCORE_THRESHOLD_ON_TRACK = 85
+SCORE_THRESHOLD_BUILDING = 60
+CATEGORY_BADGE_PALETTE = {
+    "Infection Control": "badge-orange",
+    "Resident Rights": "badge-blue",
+    "Communication": "badge-green",
+    "Safety": "badge-orange",
+    "Transfers and Mobility": "badge-blue",
+    "Vital Signs": "badge-green",
+    "Elimination": "badge-orange",
+    "Nutrition and Hydration": "badge-green",
+    "Skin Care and Personal Care": "badge-blue",
+    "Mental Health and Social Needs": "badge-green",
+    "Restorative Care": "badge-orange",
+    "Documentation and Reporting": "badge-blue"
+}
+CATEGORY_ICONS = {
+    "Infection Control": "🧼",
+    "Resident Rights": "🫶",
+    "Communication": "💬",
+    "Safety": "🛡️",
+    "Transfers and Mobility": "♿",
+    "Vital Signs": "💓",
+    "Elimination": "🧪",
+    "Nutrition and Hydration": "🥗",
+    "Skin Care and Personal Care": "🧴",
+    "Mental Health and Social Needs": "🌤️",
+    "Restorative Care": "🏃",
+    "Documentation and Reporting": "📝"
+}
+
+def escape_html(value):
+    """Escape HTML special characters before inserting content into custom markup."""
+    return html.escape(str(value))
 
 def pct(value, total):
     if total == 0:
@@ -236,6 +578,72 @@ def missing_items(summary):
         items.append("Monitor countdown until 90-day TULIP window opens")
     return items
 
+def milestone_label(score):
+    if score >= SCORE_THRESHOLD_ON_TRACK:
+        return "On track"
+    if score >= SCORE_THRESHOLD_BUILDING:
+        return "Building momentum"
+    return "Needs attention"
+
+def milestone_badge_class(score):
+    if score >= SCORE_THRESHOLD_ON_TRACK:
+        return "badge-green"
+    if score >= SCORE_THRESHOLD_BUILDING:
+        return "badge-orange"
+    return "badge-blue"
+
+def badge_class_for_category(category):
+    return CATEGORY_BADGE_PALETTE.get(category, "badge-blue")
+
+def icon_for_category(category):
+    return CATEGORY_ICONS.get(category, "📘")
+
+def render_breadcrumb(items):
+    crumb_html = "".join(
+        f"<span>{escape_html(item)}</span>" if idx == len(items) - 1 else f"<span>{escape_html(item)}</span><span>›</span>"
+        for idx, item in enumerate(items)
+    )
+    st.markdown(f'<div class="breadcrumb-bar">{crumb_html}</div>', unsafe_allow_html=True)
+
+def render_progress_summary(title, score, detail, badge_text, badge_class="badge-blue"):
+    """Render a styled summary card for a percentage score and its milestone badge."""
+    st.markdown(
+        f"""
+        <div class="progress-shell">
+            <div class="progress-head">
+                <div>
+                    <div class="section-title">{escape_html(title)}</div>
+                    <div class="progress-copy">{escape_html(detail)}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div class="progress-percent">{score}%</div>
+                    <span class="badge {escape_html(badge_class)}">{escape_html(badge_text)}</span>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+def render_course_card(icon, badge_class, badge_text, title, description, meta_left, meta_right, progress=None, thumb_style=""):
+    """Return a reusable course-card HTML block for study tracks and CEU promos."""
+    progress_html = ""
+    if progress is not None:
+        progress_html = f'<div class="mini-progress"><span style="width:{progress}%;"></span></div>'
+    return f"""
+        <div class="card interactive-card">
+            <div class="course-thumb" style="{thumb_style}">{escape_html(icon)}</div>
+            <span class="badge {escape_html(badge_class)}">{escape_html(badge_text)}</span>
+            <div class="course-card-title">{escape_html(title)}</div>
+            <div class="course-card-copy">{escape_html(description)}</div>
+            {progress_html}
+            <div class="course-card-meta">
+                <span>{escape_html(meta_left)}</span>
+                <span>{escape_html(meta_right)}</span>
+            </div>
+        </div>
+    """
+
 def make_5506_text(cna_row, facility_row, summary):
     return f"""
 TEXAS FORM 5506-NAR MOCK PRE-FILL SUMMARY
@@ -284,12 +692,18 @@ Use official Texas HHSC forms and TULIP for real submission.
 # =========================================================
 # SESSION STATE
 # =========================================================
+VIEW_A = "View A: Texas CNA Academy"
+VIEW_B = "View B: CNA CEUs & TULIP-Link"
+VIEW_C = "View C: DON or Instructors & Facility Dashboard"
+VIEW_OPTIONS = [VIEW_A, VIEW_B, VIEW_C]
+
 defaults = {
-    "current_view": "Home",
     "flash_index": 0,
     "flash_flip": False,
     "flash_category": "All Categories",
     "flash_category_prev": "All Categories",
+    "show_main_screen": True,
+    "active_view": VIEW_A,
     "mastered_cards": set(),
     "review_cards": set(),
     "written_answers": {},
@@ -513,6 +927,31 @@ category_descriptions = {
     "Restorative Care": "Encourage independence safely and follow restorative plans consistently.",
     "Documentation and Reporting": "Document observations accurately and report changes clearly.",
 }
+flashcard_categories = ["All Categories"] + sorted(category_descriptions)
+
+view_meta = {
+    "View A: Texas CNA Academy": {
+        "eyebrow": "Study.com-inspired learning",
+        "title": "A cleaner, brighter CNA prep experience",
+        "description": "Move from study tracks to flashcards, quizzes, and clinical skills with a modern course-card layout built for focused review sessions.",
+        "breadcrumb": ["Home", "CNA Academy"],
+        "highlights": ["Interactive course cards", "Progress milestones", "Quiz feedback"]
+    },
+    "View B: CNA CEUs & TULIP-Link": {
+        "eyebrow": "Renewal planning",
+        "title": "Track CEUs and TULIP readiness in one place",
+        "description": "See readiness, missing steps, and sponsored learning opportunities with cleaner dashboards and easier scannability.",
+        "breadcrumb": ["Home", "Renewal Hub"],
+        "highlights": ["Prominent progress", "Checklist-based guidance", "Sponsored CEU cards"]
+    },
+    "View C: DON or Instructors & Facility Dashboard": {
+        "eyebrow": "Facility oversight",
+        "title": "Facility-ready compliance dashboards for leaders",
+        "description": "Filter urgent staff, review readiness indicators, and coordinate follow-up actions with stronger hierarchy and spacing.",
+        "breadcrumb": ["Home", "Facility Dashboard"],
+        "highlights": ["Risk filtering", "Action center", "Compliance matrix"]
+    }
+}
 
 written_quiz = [
     {
@@ -733,107 +1172,113 @@ common_delay_mistakes = [
 st.markdown("""
 <div class="main-hero">
     <h1>🩺 TULIP-Link CNA Academy</h1>
-    <div>Study tools, flashcards, and TULIP renewal guidance built for Texas nurse aides and facility teams.</div>
+    <div class="hero-sub">A modern study hub for CNA exam prep, renewal readiness, and facility support workflows.</div>
+    <div class="hero-pills">
+        <span class="hero-pill">Personalized Study Paths</span>
+        <span class="hero-pill">Progress Tracking</span>
+        <span class="hero-pill">Texas Renewal Support</span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
-with st.sidebar:
-    st.header("Navigation")
-    _view_options = [
-        "Home",
-        "View A: Texas CNA Academy",
-        "View B: CNA & TULIP",
-        "View C: DON & Facility Staff",
-        "View D: Instructors"
-    ]
-    _cur = st.session_state.get("current_view", "Home")
-    _idx = _view_options.index(_cur) if _cur in _view_options else 0
-    view = st.radio("Choose your path", _view_options, index=_idx)
-    st.session_state.current_view = view
-    st.markdown("---")
-    if view == "Home":
-        st.caption("Select a section from the buttons above or use this menu.")
-    elif view == "View A: Texas CNA Academy":
-        st.caption("Practice flashcards, written questions, and clinical skills review for CNA certification.")
-    elif view == "View B: CNA & TULIP":
-        st.caption("Track renewal progress, review in-service requirements, and stay ready for the TULIP window.")
-    elif view == "View C: DON & Facility Staff":
-        st.caption("Monitor facility-level DON compliance, verify CNA licensure status, and support TULIP renewal workflows.")
-    else:
-        st.caption("Texas state instructor requirements, curriculum guides, printable worksheets, and clinical skills checklists.")
-    st.markdown("---")
-    st.caption("Built for students, active CNAs, facility leadership, and instructors.")
-    st.markdown("### Quick start")
-    st.write(
-        "- Pick the view that matches your role\n"
-        "- Use flashcard categories to focus study\n"
-        "- Track readiness progress before test or renewal"
-    )
+if st.session_state.show_main_screen:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Main Screen")
+    st.write("Start your learning journey by opening the Texas CNA Academy experience.")
+    if st.button("Texas CNA Academy", type="primary", use_container_width=True):
+        st.session_state.active_view = VIEW_A
+        st.session_state.show_main_screen = False
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
 
-# =========================================================
-# HOME
-# =========================================================
-if view == "Home":
-    st.subheader("Welcome to TULIP-Link CNA Academy")
+with st.sidebar:
     st.markdown(
-        '<div class="info-card">Select a section below to get started. Each area is designed for a specific role in the Texas CNA community.</div>',
+        """
+        <div class="sidebar-brand">
+            <div class="eyebrow">TULIP-Link CNA Academy</div>
+            <h3 style="margin:.8rem 0 .45rem;">Study.com-style navigation</h3>
+            <p>Jump between study, renewal, and facility workflows without losing your place.</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    if st.button("← Back to Main Screen", use_container_width=True):
+        st.session_state.show_main_screen = True
+        st.rerun()
+    selected_index = VIEW_OPTIONS.index(st.session_state.active_view) if st.session_state.active_view in VIEW_OPTIONS else 0
+    view = st.radio(
+        "Choose your path",
+        VIEW_OPTIONS,
+        index=selected_index
+    )
+    st.session_state.active_view = view
+    st.markdown("---")
+
+    if view == "View A: Texas CNA Academy":
+        st.selectbox("Filter flashcards by category", flashcard_categories, key="flash_category")
+        if st.session_state.flash_category != "All Categories":
+            st.caption(category_descriptions.get(st.session_state.flash_category, ""))
+        st.markdown(
+            """
+            <div class="sidebar-panel">
+                <strong>Academy focus</strong>
+                <p>Practice flashcards, written questions, and clinical skill checklists in smaller study sprints.</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    elif view == "View B: CNA CEUs & TULIP-Link":
+        st.markdown(
+            """
+            <div class="sidebar-panel">
+                <strong>Renewal focus</strong>
+                <p>Track in-service requirements, watch the TULIP countdown, and clear missing items faster.</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            """
+            <div class="sidebar-panel">
+                <strong>Leadership focus</strong>
+                <p>Monitor facility-level readiness, prioritize urgent staff, and support renewal follow-through.</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    st.markdown(
+        """
+        <div class="sidebar-panel">
+            <strong>Quick start</strong>
+            <p>1. Pick the role that matches your workflow.</p>
+            <p>2. Use the highlighted cards and milestones to spot your next action.</p>
+            <p>3. Track progress before test day, renewal, or staff outreach.</p>
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
-    h1, h2 = st.columns(2)
-    with h1:
-        st.markdown("""
-        <div class="home-btn-card">
-            <div class="home-btn-icon">📚</div>
-            <div class="home-btn-title">Texas CNA Academy</div>
-            <div class="home-btn-desc">Modules, chapters, quizzes, flashcards, and learning materials to prepare for CNA certification in Texas.</div>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("Go to Texas CNA Academy →", use_container_width=True, key="home_btn_a"):
-            st.session_state.current_view = "View A: Texas CNA Academy"
-            st.rerun()
-
-    with h2:
-        st.markdown("""
-        <div class="home-btn-card">
-            <div class="home-btn-icon">🔁</div>
-            <div class="home-btn-title">CNA &amp; TULIP</div>
-            <div class="home-btn-desc">Required state of Texas CNA CEUs, renewal timelines, TULIP portal guidance, and steps to renew your CNA license.</div>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("Go to CNA & TULIP →", use_container_width=True, key="home_btn_b"):
-            st.session_state.current_view = "View B: CNA & TULIP"
-            st.rerun()
-
-    h3, h4 = st.columns(2)
-    with h3:
-        st.markdown("""
-        <div class="home-btn-card">
-            <div class="home-btn-icon">🏥</div>
-            <div class="home-btn-title">DON &amp; Facility Staff</div>
-            <div class="home-btn-desc">Check CNA licensure status via TULIP, monitor CEU compliance for your facility's CNAs, and manage renewal workflows.</div>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("Go to DON & Facility Staff →", use_container_width=True, key="home_btn_c"):
-            st.session_state.current_view = "View C: DON & Facility Staff"
-            st.rerun()
-
-    with h4:
-        st.markdown("""
-        <div class="home-btn-card">
-            <div class="home-btn-icon">🎓</div>
-            <div class="home-btn-title">Instructors</div>
-            <div class="home-btn-desc">All instructor information required by the state of Texas for CNAs, printable PDF worksheets, and clinical skills checklists.</div>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("Go to Instructors →", use_container_width=True, key="home_btn_d"):
-            st.session_state.current_view = "View D: Instructors"
-            st.rerun()
+active_view = view_meta[view]
+render_breadcrumb(active_view["breadcrumb"])
+highlight_html = "".join(f'<span class="hero-chip">{escape_html(item)}</span>' for item in active_view["highlights"])
+st.markdown(
+    f"""
+    <div class="main-hero">
+        <div class="eyebrow">{escape_html(active_view["eyebrow"])}</div>
+        <div class="hero-title">🩺 {escape_html(active_view["title"])}</div>
+        <div class="hero-copy">{escape_html(active_view["description"])}</div>
+        <div class="hero-highlights">{highlight_html}</div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # =========================================================
 # VIEW A
 # =========================================================
-elif view == "View A: Texas CNA Academy":
+if view == VIEW_A:
     st.subheader("Texas CNA Academy")
     st.markdown(
         '<div class="info-card">Focus on mastery, practice written questions, and simulate clinical skill checklists. Use the tabs to keep your review structured and efficient.</div>',
@@ -867,11 +1312,14 @@ elif view == "View A: Texas CNA Academy":
     with m3:
         st.markdown(f'<div class="metric-card"><div class="kpi">{skills_score}/{len(skills_quiz)}</div><div class="label">Skills Quiz Score</div></div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### Test Readiness Progress")
+    render_progress_summary(
+        "Test readiness progress",
+        readiness_pct,
+        "A brighter progress view highlights completion percentage, study momentum, and milestone status at a glance.",
+        milestone_label(readiness_pct),
+        milestone_badge_class(readiness_pct)
+    )
     st.progress(readiness_pct / 100)
-    st.write(f"Readiness score: **{readiness_pct}%**")
-    st.markdown('</div>', unsafe_allow_html=True)
 
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "Study Tracks",
@@ -885,7 +1333,37 @@ elif view == "View A: Texas CNA Academy":
 
     with tab1:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### Texas Study Tracks")
+        st.markdown("### Featured Study Tracks")
+        st.caption("Browse cleaner course cards with category badges, quick descriptions, and progress indicators before opening the lesson outline below.")
+        categories_for_cards = sorted(category_descriptions.keys())
+        for start in range(0, len(categories_for_cards), 3):
+            cols = st.columns(3)
+            for col, category_name in zip(cols, categories_for_cards[start:start + 3]):
+                total_in_category = sum(1 for card in flashcards if card["category"] == category_name)
+                mastered_in_category = sum(
+                    1 for idx in st.session_state.mastered_cards
+                    if 0 <= idx < len(flashcards) and flashcards[idx]["category"] == category_name
+                )
+                review_in_category = sum(
+                    1 for idx in st.session_state.review_cards
+                    if 0 <= idx < len(flashcards) and flashcards[idx]["category"] == category_name
+                )
+                course_progress = pct(mastered_in_category, total_in_category)
+                with col:
+                    st.markdown(
+                        render_course_card(
+                            icon_for_category(category_name),
+                            badge_class_for_category(category_name),
+                            category_name,
+                            category_name,
+                            category_descriptions[category_name],
+                            f"{course_progress}% mastered",
+                            f"{review_in_category} review",
+                            progress=course_progress
+                        ),
+                        unsafe_allow_html=True
+                    )
+        st.markdown("### Lesson Outlines")
         for track in study_tracks:
             with st.expander(track["title"], expanded=False):
                 for item in track["items"]:
@@ -895,12 +1373,20 @@ elif view == "View A: Texas CNA Academy":
     with tab2:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("### Interactive Flashcards")
-        st.markdown('<div class="info-card">Select a category, flip cards to see the answer, then mark cards as mastered or for review.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="info-card">Use the category filter in the left sidebar to narrow the deck, then flip cards and mark mastery as you go.</div>', unsafe_allow_html=True)
 
-        categories = ["All Categories"] + sorted({card["category"] for card in flashcards})
+        category = st.session_state.flash_category
         c1, c2 = st.columns([2, 1])
         with c1:
-            category = st.selectbox("Filter by category", categories, key="flash_category")
+            st.markdown(
+                f"""
+                <div class="pill-row">
+                    <span class="pill">Current focus: {escape_html(category)}</span>
+                    <span class="pill">Deck size: {len(flashcards)} cards</span>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
             if st.button("Reset to All Categories", use_container_width=True):
                 st.session_state.flash_category = "All Categories"
                 st.session_state.flash_category_prev = "All Categories"
@@ -917,10 +1403,10 @@ elif view == "View A: Texas CNA Academy":
             st.metric("Category", category)
             st.metric("Visible cards", f"{filtered_count}/{total_cards}")
 
-        if st.session_state.flash_category != st.session_state.flash_category_prev:
+        if category != st.session_state.flash_category_prev:
             st.session_state.flash_index = 0
             st.session_state.flash_flip = False
-            st.session_state.flash_category_prev = st.session_state.flash_category
+            st.session_state.flash_category_prev = category
 
         filtered_flashcards = [
             (idx, card)
@@ -939,18 +1425,15 @@ elif view == "View A: Texas CNA Academy":
                 card_index, card = filtered_flashcards[st.session_state.flash_index]
                 st.caption(f"Card {st.session_state.flash_index + 1} of {len(filtered_flashcards)} • {card['category']}")
 
-                is_back = st.session_state.flash_flip
                 st.markdown(
                     f"""
-                    <div style="background:#ffffff; border:1px solid #d1d5db; border-radius:0.5rem; padding:1.5rem;
-                                aspect-ratio:1/1; display:flex; flex-direction:column; justify-content:center; align-items:center;
-                                text-align:center; margin-bottom:1rem;">
-                        <div style="font-size:0.85rem; color:#475569; font-weight:600; margin-bottom:0.6rem; align-self:flex-start;">
-                            {'Answer' if is_back else 'Question'} &nbsp;·&nbsp; {card['category']}
+                    <div class="soft-card interactive-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
+                            <span class="badge {escape_html(badge_class_for_category(card['category']))}">{escape_html(card['category'])}</span>
+                            <span style="font-size:0.90rem; color:#0f5db4; font-weight:700;">{st.session_state.flash_index + 1}/{len(filtered_flashcards)}</span>
                         </div>
-                        <p style="color:#000000; font-size:{'1.15rem' if is_back else '1.4rem'}; font-weight:{'700' if not is_back else '400'}; line-height:1.6; margin:0;">
-                            {card['back'] if is_back else card['front']}
-                        </p>
+                        <h3>{'Answer' if st.session_state.flash_flip else 'Question'}</h3>
+                        <p style="font-size:1.06rem; line-height:1.6;">{escape_html(card['back'] if st.session_state.flash_flip else card['front'])}</p>
                     </div>
                     """, unsafe_allow_html=True
                 )
@@ -1034,8 +1517,19 @@ elif view == "View A: Texas CNA Academy":
     with tab3:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("### Written Practice Quiz")
+        answered_written = len(st.session_state.written_answers)
+        st.progress((answered_written / len(written_quiz)) if written_quiz else 0)
+        st.caption(f"Completion: {answered_written}/{len(written_quiz)} questions answered")
         for i, item in enumerate(written_quiz):
-            st.markdown(f"**Q{i+1}. {item['q']}**")
+            st.markdown(
+                f"""
+                <div class="quiz-shell">
+                    <div class="quiz-label">Question {i+1} of {len(written_quiz)}</div>
+                    <strong>{item['q']}</strong>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
             ans = st.radio(
                 f"Choose answer for written question {i+1}",
                 item["choices"],
@@ -1082,8 +1576,19 @@ elif view == "View A: Texas CNA Academy":
     with tab5:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("### Skills Quiz")
+        answered_skills = len(st.session_state.skills_answers)
+        st.progress((answered_skills / len(skills_quiz)) if skills_quiz else 0)
+        st.caption(f"Completion: {answered_skills}/{len(skills_quiz)} skills questions answered")
         for i, item in enumerate(skills_quiz):
-            st.markdown(f"**Q{i+1}. {item['q']}**")
+            st.markdown(
+                f"""
+                <div class="quiz-shell">
+                    <div class="quiz-label">Skills question {i+1} of {len(skills_quiz)}</div>
+                    <strong>{item['q']}</strong>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
             ans = st.radio(
                 f"Choose answer for skills question {i+1}",
                 item["choices"],
@@ -1126,8 +1631,8 @@ elif view == "View A: Texas CNA Academy":
 # =========================================================
 # VIEW B
 # =========================================================
-elif view == "View B: CNA & TULIP":
-    st.subheader("CNA & TULIP")
+elif view == VIEW_B:
+    st.subheader("CNA CEUs & TULIP-Link")
     st.markdown(
         '<div class="info-card">Review CNA renewal readiness, missing CEU requirements, and TULIP timing. Use the dashboard to prioritize the next steps before the 90-day window.</div>',
         unsafe_allow_html=True
@@ -1153,6 +1658,14 @@ elif view == "View B: CNA & TULIP":
         st.markdown(f'<div class="metric-card"><div class="kpi">{status}</div><div class="label">TULIP Window</div></div>', unsafe_allow_html=True)
     with m4:
         st.markdown(f'<div class="metric-card"><div class="kpi">{summary["days_left"]}</div><div class="label">Days Until Expiration</div></div>', unsafe_allow_html=True)
+
+    render_progress_summary(
+        "Renewal readiness",
+        score,
+        "Monitor completion percentage, identify missing training, and keep the next milestone visible before the TULIP window opens.",
+        milestone_label(score),
+        milestone_badge_class(score)
+    )
 
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "Dashboard",
@@ -1229,11 +1742,11 @@ elif view == "View B: CNA & TULIP":
         st.markdown("### Sponsored Texas CEU Placeholder")
         s1, s2, s3 = st.columns(3)
         with s1:
-            st.markdown('<div class="soft-card"><strong>Geriatric Care Update</strong><br><span class="small-muted">8 hours • Sponsored Texas CEU placement</span></div>', unsafe_allow_html=True)
+            st.markdown(render_course_card("👵", "badge-green", "Geriatrics", "Geriatric Care Update", "Refresh core aging-care practices while filling a major renewal requirement.", "8 hours", "Sponsored slot", thumb_style="height:76px; margin-bottom:.75rem;"), unsafe_allow_html=True)
         with s2:
-            st.markdown('<div class="soft-card"><strong>Dementia & Alzheimer’s Care</strong><br><span class="small-muted">8 hours • Sponsored Texas CEU placement</span></div>', unsafe_allow_html=True)
+            st.markdown(render_course_card("🧠", "badge-blue", "Memory Care", "Dementia & Alzheimer’s Care", "Build confidence in calmer communication, redirection, and safer support routines.", "8 hours", "Sponsored slot", thumb_style="height:76px; margin-bottom:.75rem;"), unsafe_allow_html=True)
         with s3:
-            st.markdown('<div class="soft-card"><strong>Infection Control Refresher</strong><br><span class="small-muted">Annual training placement area</span></div>', unsafe_allow_html=True)
+            st.markdown(render_course_card("🦠", "badge-orange", "Safety", "Infection Control Refresher", "Keep annual safety documentation current with a faster, cleaner training entry point.", "Annual", "Priority topic", thumb_style="height:76px; margin-bottom:.75rem;"), unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with tab6:
@@ -1246,8 +1759,8 @@ elif view == "View B: CNA & TULIP":
 # =========================================================
 # VIEW C
 # =========================================================
-elif view == "View C: DON & Facility Staff":
-    st.subheader("DON & Facility Staff")
+else:
+    st.subheader("DON or Instructors & Facility Dashboard")
     st.markdown(
         '<div class="info-card">Monitor facility readiness, highlight urgent CNA action items, and support TULIP compliance with clear staff-level guidance.</div>',
         unsafe_allow_html=True
@@ -1381,300 +1894,6 @@ elif view == "View C: DON & Facility Staff":
         st.write("- Evening and night shift differential opportunities")
         st.write("- Employer-sponsored CEU support")
         st.write("- Test-prep assistance and referral bonuses")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-# =========================================================
-# VIEW D
-# =========================================================
-else:
-    st.subheader("Instructors")
-    st.markdown(
-        '<div class="info-card">Texas state instructor requirements, required curriculum topics, printable PDF worksheets, and clinical skills checklists for CNA programs.</div>',
-        unsafe_allow_html=True
-    )
-
-    itab1, itab2, itab3, itab4 = st.tabs([
-        "Instructor Requirements",
-        "Required Curriculum",
-        "Worksheets & Checklists",
-        "Resources & Links"
-    ])
-
-    with itab1:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### Texas State Requirements for CNA Instructors")
-        st.write("Per Texas HHSC regulations, individuals teaching nurse aide training programs must meet the following requirements:")
-        reqs = [
-            "Hold a current, unencumbered Registered Nurse (RN) license in Texas.",
-            "Have a minimum of two years of nursing experience, including at least one year of experience in long-term care or a related field.",
-            "Complete an approved Nurse Aide Training Program Coordinator Orientation before teaching.",
-            "Maintain familiarity with the current Texas Nurse Aide Curriculum and competency requirements.",
-            "Ensure the program includes a minimum of 100 training hours: at least 75 hours of classroom/lab instruction and 25 hours of supervised clinical training.",
-            "Provide clinical training only in a state-approved long-term care facility or comparable setting.",
-            "Maintain student records and submit program completion reports to the Texas HHSC Nurse Aide Registry (NAR).",
-            "Comply with all Texas Health and Human Services Commission (HHSC) and federal OBRA regulations governing nurse aide training.",
-        ]
-        for r in reqs:
-            st.write(f"- {r}")
-        st.markdown(
-            '<div class="info-card">Always verify current requirements directly with Texas HHSC and the Nurse Aide Registry. Requirements are subject to change.</div>',
-            unsafe_allow_html=True
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with itab2:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### Required Curriculum Topics (Texas)")
-        st.write("Texas-approved CNA training programs must cover the following core competency areas:")
-        curriculum = {
-            "Communication and Interpersonal Skills": [
-                "Verbal and non-verbal communication with residents, families, and team members",
-                "Reporting observations accurately to the nurse",
-                "Responding to call lights and resident requests",
-            ],
-            "Infection Control": [
-                "Hand hygiene procedures (hand washing and alcohol-based rub)",
-                "Standard precautions and transmission-based precautions",
-                "Proper use of personal protective equipment (PPE)",
-                "Handling and disposing of soiled linens and waste",
-            ],
-            "Safety and Emergency Procedures": [
-                "Fall prevention and safe resident movement",
-                "Fire and disaster response procedures",
-                "Recognizing and responding to abuse, neglect, and exploitation",
-                "Proper use of restraints per care plan",
-            ],
-            "Residents' Rights": [
-                "Privacy, dignity, and confidentiality (HIPAA basics)",
-                "Freedom from abuse and neglect",
-                "Right to make decisions and refuse treatment",
-                "Grievance procedures",
-            ],
-            "Basic Nursing Skills": [
-                "Vital signs: temperature, pulse, respiration, blood pressure",
-                "Height and weight measurement",
-                "Intake and output documentation",
-                "Catheter care and urinary elimination assistance",
-                "Bowel care and ostomy basics",
-                "Oral hygiene, bathing, grooming, and dressing",
-                "Bed making (occupied and unoccupied)",
-            ],
-            "Personal Care Skills": [
-                "Perineal care",
-                "Nail and hair care",
-                "Shaving and skin care",
-                "Denture care",
-            ],
-            "Mental Health and Social Service Needs": [
-                "Understanding dementia and Alzheimer's disease",
-                "Supporting residents with behavioral issues",
-                "Encouraging independence and resident self-esteem",
-            ],
-            "Care of Cognitively Impaired Residents": [
-                "Communication techniques for residents with dementia",
-                "Managing wandering and repetitive behaviors",
-                "Approaches for difficult behaviors",
-            ],
-            "Basic Restorative Services": [
-                "Range of motion exercises",
-                "Assistive devices and their use",
-                "Encouraging self-care and independence",
-            ],
-            "Residents with Special Needs": [
-                "Caring for residents with physical disabilities",
-                "End-of-life and palliative care basics",
-                "Caring for residents with sensory impairments",
-            ],
-        }
-        for topic, subtopics in curriculum.items():
-            with st.expander(f"📋 {topic}"):
-                for s in subtopics:
-                    st.write(f"  - {s}")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with itab3:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### Printable Worksheets & Clinical Skills Checklists")
-        st.write("Download and print the following resources for classroom and clinical use.")
-
-        ws_col1, ws_col2 = st.columns(2)
-
-        hand_hygiene_text = """TEXAS CNA ACADEMY — CLINICAL SKILLS CHECKLIST
-Hand Hygiene (Hand Washing)
-=============================================
-Student Name: ____________________________
-Evaluator: _______________________________
-Date: ___________________________________
-
-STEPS                                             DONE
-1. Turn on water to comfortable temperature.       [ ]
-2. Wet hands and wrists thoroughly.                [ ]
-3. Apply soap.                                     [ ]
-4. Rub hands together for at least 20 seconds,
-   cleaning all surfaces including fingernails,
-   between fingers, and back of hands.             [ ]
-5. Keep fingertips pointing downward.              [ ]
-6. Rinse hands thoroughly under running water.     [ ]
-7. Dry hands with a clean paper towel.             [ ]
-8. Use paper towel to turn off faucet.             [ ]
-9. Dispose of paper towel without recontaminating
-   clean hands.                                    [ ]
-
-PASS / NEEDS REVIEW (circle one)
-Comments: _______________________________
-"""
-        vital_signs_text = """TEXAS CNA ACADEMY — CLINICAL SKILLS CHECKLIST
-Measuring Blood Pressure (Manual)
-=============================================
-Student Name: ____________________________
-Evaluator: _______________________________
-Date: ___________________________________
-
-STEPS                                             DONE
-1. Identify resident and explain procedure.        [ ]
-2. Position resident's arm at heart level.         [ ]
-3. Expose bare arm and apply cuff 1–2 inches
-   above the antecubital space.                    [ ]
-4. Locate brachial artery and place stethoscope.   [ ]
-5. Inflate cuff to approximately 30 mmHg above
-   the point where pulse disappears.               [ ]
-6. Slowly release pressure (2–3 mmHg/sec).         [ ]
-7. Record first sound as systolic pressure.        [ ]
-8. Record last sound as diastolic pressure.        [ ]
-9. Remove cuff and ensure resident comfort.        [ ]
-10. Document reading accurately and report to
-    nurse if outside normal range.                 [ ]
-
-PASS / NEEDS REVIEW (circle one)
-Comments: _______________________________
-"""
-        transfer_text = """TEXAS CNA ACADEMY — CLINICAL SKILLS CHECKLIST
-Assisting Resident from Bed to Wheelchair (with Gait Belt)
-=============================================
-Student Name: ____________________________
-Evaluator: _______________________________
-Date: ___________________________________
-
-STEPS                                             DONE
-1. Identify resident and explain procedure.        [ ]
-2. Raise bed to working height; lock wheels.       [ ]
-3. Position wheelchair at 45° to bed; lock wheels. [ ]
-4. Remove footrests or swing them aside.           [ ]
-5. Lower bed side rails as needed.                 [ ]
-6. Apply gait belt snugly over clothing.           [ ]
-7. Assist resident to sitting position at edge
-   of bed; allow a brief pause.                    [ ]
-8. Ensure resident is wearing non-skid footwear.   [ ]
-9. Stand in front of resident; use gait belt.      [ ]
-10. Assist resident to standing; check for
-    dizziness or weakness.                         [ ]
-11. Pivot and lower resident into wheelchair.       [ ]
-12. Ensure resident is properly positioned and
-    comfortable; replace footrests.                [ ]
-13. Remove gait belt; ensure call light is within
-    reach.                                         [ ]
-14. Perform hand hygiene.                          [ ]
-
-PASS / NEEDS REVIEW (circle one)
-Comments: _______________________________
-"""
-        instructor_requirements_text = """TEXAS CNA INSTRUCTOR REQUIREMENTS — QUICK REFERENCE
-Texas HHSC Nurse Aide Training Program
-=============================================
-
-INSTRUCTOR QUALIFICATIONS
-- Current, unencumbered Texas RN license
-- Minimum 2 years nursing experience
-- Minimum 1 year experience in long-term care or related setting
-- Completion of HHSC Nurse Aide Program Coordinator Orientation
-
-PROGRAM MINIMUM HOURS
-- Total: 100 hours
-  • Classroom / Lab: at least 75 hours
-  • Supervised Clinical: at least 25 hours
-
-CLINICAL SITE REQUIREMENTS
-- Must be a state-approved long-term care facility or equivalent
-- Instructor-to-student ratio: 1:10 maximum during clinical
-
-RECORDKEEPING OBLIGATIONS
-- Maintain attendance records for all students
-- Document competency evaluations for each student
-- Submit program completion data to the Texas NAR
-- Retain records for a minimum of 3 years
-
-COMPETENCY EVALUATION
-- Written or oral examination
-- Demonstration of clinical skills
-- Evaluation must be completed before student is listed on the NAR
-
-RENEWAL AND ONGOING COMPLIANCE
-- Stay current with HHSC curriculum updates
-- Monitor student certification status via TULIP / NAR
-
-For the most current requirements, visit:
-Texas HHSC: https://www.hhs.texas.gov
-Nurse Aide Registry: Contact HHSC directly
-"""
-        with ws_col1:
-            st.markdown('<div class="soft-card"><strong>🧼 Hand Hygiene Checklist</strong><br><span class="small-muted">Clinical skills step-by-step evaluation sheet</span></div>', unsafe_allow_html=True)
-            st.download_button(
-                "⬇ Download Hand Hygiene Checklist",
-                data=hand_hygiene_text,
-                file_name="CNA_Hand_Hygiene_Checklist.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
-
-            st.markdown('<div class="soft-card"><strong>🩺 Blood Pressure Checklist</strong><br><span class="small-muted">Vital signs — manual blood pressure evaluation</span></div>', unsafe_allow_html=True)
-            st.download_button(
-                "⬇ Download Blood Pressure Checklist",
-                data=vital_signs_text,
-                file_name="CNA_Blood_Pressure_Checklist.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
-
-        with ws_col2:
-            st.markdown('<div class="soft-card"><strong>♿ Bed-to-Wheelchair Transfer Checklist</strong><br><span class="small-muted">Transfers and mobility evaluation sheet</span></div>', unsafe_allow_html=True)
-            st.download_button(
-                "⬇ Download Transfer Checklist",
-                data=transfer_text,
-                file_name="CNA_Transfer_Checklist.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
-
-            st.markdown('<div class="soft-card"><strong>📋 Instructor Requirements Summary</strong><br><span class="small-muted">Quick-reference sheet for Texas CNA instructors</span></div>', unsafe_allow_html=True)
-            st.download_button(
-                "⬇ Download Instructor Requirements",
-                data=instructor_requirements_text,
-                file_name="Texas_CNA_Instructor_Requirements.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with itab4:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### Official Resources & Links")
-        st.write("The following agencies and resources are essential references for Texas CNA instructors and programs:")
-        links = [
-            ("Texas Health and Human Services Commission (HHSC)", "https://www.hhs.texas.gov", "Primary regulatory body for nurse aide training programs in Texas."),
-            ("Texas Nurse Aide Registry (NAR)", "https://www.hhs.texas.gov/providers/long-term-care-providers/nurse-aides/nurse-aide-registry", "Search CNA licensure status and manage registry listings."),
-            ("TULIP Portal", "https://www.hhs.texas.gov/providers/long-term-care-providers/nurse-aides/tulip", "Texas Online Portal for tracking CNA CEUs and submitting renewal requests."),
-            ("Prometric — CNA Testing", "https://www.prometric.com/tx-cna", "Schedule and manage Texas CNA competency evaluation (written and skills exams)."),
-            ("Federal OBRA Regulations (CMS)", "https://www.cms.gov/Medicare/Provider-Enrollment-and-Certification/GuidanceforLawsAndRegulations/NursingHomes", "Federal standards governing nurse aide training under OBRA '87."),
-        ]
-        for name, url, desc in links:
-            st.markdown(f"**[{name}]({url})**")
-            st.write(f"  {desc}")
-            st.write("")
-        st.markdown(
-            '<div class="info-card">All external links are provided for reference only. Always verify current requirements with the official agency before making program decisions.</div>',
-            unsafe_allow_html=True
-        )
         st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")
