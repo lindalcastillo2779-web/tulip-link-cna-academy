@@ -26,6 +26,11 @@ def hero_section() -> None:
                     Built for Texas nurse aide students, active CNAs, and nursing home DONs.
                     Learn faster, stay compliant, and reduce last-minute renewal stress.
                 </p>
+                <div class="hero-tags">
+                    <span>Texas-focused</span>
+                    <span>Mobile-first</span>
+                    <span>Compliance-ready</span>
+                </div>
             </div>
         </div>
         """,
@@ -34,7 +39,7 @@ def hero_section() -> None:
 
     col1, col2, col3 = st.columns([1, 1, 2])
     with col1:
-        if st.button("Start Exam Prep", use_container_width=True):
+        if st.button("Start Exam Prep", use_container_width=True, type="primary"):
             st.switch_page("pages/1_Exam_Prep.py")
     with col2:
         if st.button("Track CEUs", use_container_width=True):
@@ -49,7 +54,7 @@ def feature_cards() -> None:
     with c1:
         st.markdown(
             """
-            <div class="card">
+            <div class="card card-accent-navy">
                 <h3>📝 Exam Prep</h3>
                 <p>Practice workflows, topic checklists, and confidence-building study plans.</p>
             </div>
@@ -58,7 +63,7 @@ def feature_cards() -> None:
         )
         st.markdown(
             """
-            <div class="card">
+            <div class="card card-accent-gold">
                 <h3>🎓 CEU Tracker</h3>
                 <p>Monitor progress toward annual CEU goals with quick status views.</p>
             </div>
@@ -68,7 +73,7 @@ def feature_cards() -> None:
     with c2:
         st.markdown(
             """
-            <div class="card">
+            <div class="card card-accent-red">
                 <h3>✅ Renewal Readiness</h3>
                 <p>Stay ahead of deadlines with a guided renewal checklist and reminders.</p>
             </div>
@@ -77,7 +82,7 @@ def feature_cards() -> None:
         )
         st.markdown(
             """
-            <div class="card">
+            <div class="card card-accent-navy">
                 <h3>🏥 Staffing Compliance</h3>
                 <p>Support DON workflows with staffing and documentation readiness tools.</p>
             </div>
@@ -88,7 +93,7 @@ def feature_cards() -> None:
 
 def media_section() -> None:
     st.markdown("## Video Learning Library")
-    st.write("Use hosted videos for best speed and mobile playback.")
+    st.write("Hosted videos are enabled for fast, reliable mobile playback.")
 
     tab1, tab2, tab3 = st.tabs(["Skills Demo", "Renewal Walkthrough", "Compliance Brief"])
 
@@ -126,7 +131,7 @@ def infographic_placeholders() -> None:
 def footer_note() -> None:
     st.markdown("---")
     st.caption(
-        "Template starter: optimize uploaded visuals as WebP and keep lesson videos hosted for performance."
+        "Texas CNA Academy starter: branded for Navy Blue, Deep Red, and Warm Gold. Keep visuals optimized as WebP for best performance."
     )
 
 

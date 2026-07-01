@@ -1,10 +1,13 @@
 :root {
-  --bg: #f6f9ff;
+  --navy: #0A2E5D;
+  --deep-red: #8B1E2D;
+  --warm-gold: #D4A437;
+
+  --bg: #f8f7f4;
   --card: #ffffff;
-  --text: #1d2a44;
-  --muted: #5a6b8a;
-  --primary: #1f6feb;
-  --border: #dbe6ff;
+  --text: #1b2433;
+  --muted: #5f6b7b;
+  --border: #e3e1d9;
 }
 
 html, body, [class*="css"] {
@@ -12,28 +15,54 @@ html, body, [class*="css"] {
 }
 
 .stApp {
-  background: linear-gradient(180deg, var(--bg) 0%, #ffffff 60%);
+  background:
+    radial-gradient(circle at 15% 10%, rgba(212, 164, 55, 0.14), transparent 35%),
+    linear-gradient(180deg, #fbfaf7 0%, #f6f4ee 100%);
   color: var(--text);
 }
 
 .hero {
-  background: radial-gradient(circle at 20% 20%, #ecf3ff 0%, #ffffff 65%);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 1.2rem 1.2rem;
+  background: linear-gradient(135deg, rgba(10, 46, 93, 0.96) 0%, rgba(139, 30, 45, 0.95) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(212, 164, 55, 0.45);
+  border-radius: 20px;
+  padding: 1.35rem 1.35rem;
   margin-bottom: 1rem;
+  box-shadow: 0 8px 24px rgba(10, 46, 93, 0.2);
 }
 
 .eyebrow {
-  color: var(--primary);
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  color: var(--warm-gold);
+  font-weight: 800;
+  letter-spacing: 0.04em;
   margin-bottom: 0.25rem;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 0.2rem 0 0.35rem;
+  line-height: 1.25;
 }
 
 .subtext {
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.9);
   margin-top: 0.5rem;
+}
+
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.8rem;
+}
+
+.hero-tags span {
+  background: rgba(212, 164, 55, 0.2);
+  border: 1px solid rgba(212, 164, 55, 0.6);
+  color: #fff5d7;
+  font-size: 0.82rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
 }
 
 .card {
@@ -42,7 +71,7 @@ html, body, [class*="css"] {
   border-radius: 14px;
   padding: 1rem;
   margin-bottom: 0.8rem;
-  box-shadow: 0 1px 2px rgba(30, 60, 120, 0.05);
+  box-shadow: 0 2px 8px rgba(27, 36, 51, 0.06);
 }
 
 .card h3 {
@@ -52,4 +81,35 @@ html, body, [class*="css"] {
 .card p {
   margin: 0;
   color: var(--muted);
+}
+
+.card-accent-navy {
+  border-left: 6px solid var(--navy);
+}
+
+.card-accent-red {
+  border-left: 6px solid var(--deep-red);
+}
+
+.card-accent-gold {
+  border-left: 6px solid var(--warm-gold);
+}
+
+.stButton > button {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.stButton > button[kind="primary"] {
+  background: var(--navy);
+  border-color: var(--navy);
+}
+
+.stButton > button[kind="primary"]:hover {
+  background: #123d79;
+  border-color: #123d79;
+}
+
+h2, h3 {
+  color: var(--navy);
 }
